@@ -1,0 +1,4 @@
+body{ background:#fafafa; }
+.hanlove-card{ max-width:720px; margin:24px; padding:40px; background:#fff; color:#111; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,.08) }
+.typo{ font-size:clamp(24px,5vw,44px); text-align:center; line-height:1.4; margin:0 0 10px }
+.credit{ margin-top:10px; text-align:center; opacity:.6; font-size:12px }

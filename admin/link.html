@@ -1,0 +1,96 @@
+<!doctype html><meta charset="utf-8"/>
+<title>Link Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#0b1020;color:#fff}
+  .wrap{max-width:1080px;margin:24px auto;padding:0 20px}
+  .flex{display:grid;grid-template-columns:320px 1fr;gap:16px}
+  label{display:block;margin:10px 0 4px;font-size:12px;opacity:.8}
+  input,select{width:100%;padding:10px;border-radius:12px;border:1px solid #3a4368;background:#121a36;color:#fff}
+  button{padding:10px 14px;border-radius:12px;border:0;background:#5b77ff;color:#fff;cursor:pointer}
+  iframe{width:100%;height:520px;background:#111;border:1px solid #3a4368;border-radius:12px}
+  .row{margin:10px 0}
+  .qr{margin-top:10px}
+</style>
+<div class="wrap">
+  <h2>Link Maker</h2>
+  <div class="flex">
+    <div>
+      <label>환경</label>
+      <select id="env"></select>
+      <label>card</label>
+      <select id="card">
+        <option value="hanlove">hanlove</option>
+        <option value="healing">healing</option>
+      </select>
+      <label>list</label>
+      <input id="list" placeholder="default / bible30 / custom-..." value="default"/>
+      <label>mode</label>
+      <select id="mode">
+        <option>daily</option><option>fixed</option><option selected>shuffle</option>
+      </select>
+      <label>id (mode=fixed일 때)</label>
+      <input id="itemId" placeholder="HL-002"/>
+      <label>옵션</label>
+      <div class="row">
+        <label><input type="checkbox" id="showCredit"> showCredit</label>
+        <label><input type="checkbox" id="utm" checked> UTM 기본값</label>
+      </div>
+      <label>버전 v=</label>
+      <input id="v" placeholder="1" value="1"/>
+      <div class="row"><button id="build">링크 생성</button></div>
+      <div class="row"><input id="url" readonly></div>
+      <div class="row"><button id="copy">URL 복사</button> <button id="makeQR">QR 생성</button></div>
+      <div id="qrcode" class="qr"></div>
+    </div>
+    <div>
+      <iframe id="preview"></iframe>
+    </div>
+  </div>
+</div>
+<script>
+async function loadConfig(){ const r = await fetch('/admin/config.json'); return r.json(); }
+function buildURL(base){
+  const p = new URL(base + '/link');
+  const card = document.getElementById('card').value;
+  const list = document.getElementById('list').value;
+  const mode = document.getElementById('mode').value;
+  const id   = document.getElementById('itemId').value.trim();
+  const v    = document.getElementById('v').value.trim();
+  p.searchParams.set('card', card);
+  p.searchParams.set('list', list);
+  p.searchParams.set('mode', mode);
+  if(mode==='fixed' && id) p.searchParams.set('id', id);
+  if(document.getElementById('showCredit').checked) p.searchParams.set('showCredit','true');
+  if(v) p.searchParams.set('v', v);
+  if(document.getElementById('utm').checked){ p.searchParams.set('utm_source','qr'); p.searchParams.set('utm_campaign', card); p.searchParams.set('utm_content', list); }
+  return p.toString();
+}
+
+async function boot(){
+  const cfg = await loadConfig();
+  const envSel = document.getElementById('env');
+  for(const k of Object.keys(cfg.envs)){
+    const o = document.createElement('option'); o.value=k; o.textContent=k; envSel.appendChild(o);
+  }
+  envSel.value = cfg.default_env || 'staging';
+
+  const rebuild = ()=>{
+    const base = cfg.envs[envSel.value].base.replace(/\/$/, '');
+    const url = buildURL(base);
+    document.getElementById('url').value = url;
+    document.getElementById('preview').src = url;
+  };
+  document.getElementById('build').onclick = rebuild;
+  document.getElementById('copy').onclick = async()=>{ await navigator.clipboard.writeText(document.getElementById('url').value); alert('복사됨'); };
+  document.getElementById('makeQR').onclick = ()=>{
+    const url = document.getElementById('url').value;
+    const img = new Image();
+    // NOTE: 테스트용 외부 API. v1에서 lib/qrcode.min.js로 교체 가능
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+    const q = document.getElementById('qrcode'); q.innerHTML=''; q.appendChild(img);
+  };
+  rebuild();
+}
+boot();
+</script>

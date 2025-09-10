@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"/>
+<title>Cards Preview</title>
+<style>body{font-family:system-ui;margin:0;background:#0b1020;color:#fff} .wrap{max-width:1080px;margin:24px auto;padding:0 20px} iframe{width:100%;height:520px;background:#111;border:1px solid #3a4368;border-radius:12px}</style>
+<div class="wrap">
+  <h2>카드 프리뷰</h2>
+  <label>카드</label>
+  <select id="card"><option>hanlove</option><option>healing</option></select>
+  <label>옵션</label>
+  <label><input id="showCredit" type="checkbox"> showCredit</label>
+  <button id="view">보기</button>
+  <iframe id="pv"></iframe>
+</div>
+<script>
+function build(){
+  const card = document.getElementById('card').value;
+  const url = new URL('/link', location.origin);
+  url.searchParams.set('card', card);
+  url.searchParams.set('list', card==='healing'?'bible30':'default');
+  url.searchParams.set('mode', card==='healing'?'daily':'shuffle');
+  if(document.getElementById('showCredit').checked) url.searchParams.set('showCredit','true');
+  document.getElementById('pv').src = url.toString();
+}
+ document.getElementById('view').onclick = build; build();
+</script>

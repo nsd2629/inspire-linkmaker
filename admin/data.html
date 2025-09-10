@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"/>
+<title>Data Viewer</title>
+<style>body{font-family:system-ui;margin:0;background:#0b1020;color:#fff} .wrap{max-width:980px;margin:24px auto;padding:0 20px} textarea{width:100%;height:520px;background:#121a36;color:#fff;border:1px solid #3a4368;border-radius:12px;padding:12px}</style>
+<div class="wrap">
+  <h2>저장소 뷰어</h2>
+  <p>경로 입력: <code>/data/&lt;card&gt;/&lt;list&gt;.json</code></p>
+  <input id="path" style="width:100%;padding:10px;border-radius:12px;border:1px solid #3a4368;background:#121a36;color:#fff" value="/data/hanlove/default.json"/>
+  <button id="load">불러오기</button>
+  <textarea id="out" readonly></textarea>
+</div>
+<script>
+async function load(){
+  const p = document.getElementById('path').value.trim();
+  try{ const r = await fetch(p,{cache:'no-store'}); const j = await r.json(); document.getElementById('out').value = JSON.stringify(j,null,2); }
+  catch(e){ document.getElementById('out').value = '로드 실패: '+e; }
+}
+ document.getElementById('load').onclick = load; load();
+</script>

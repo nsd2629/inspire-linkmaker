@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Link Maker</title>
+<style>
+  body{margin:0;font-family:system-ui,apple sd gothic neo,Segoe UI,Roboto,Arial,sans-serif;background:#111;color:#eee}
+  #app{min-height:100vh;display:grid;place-items:center;padding:24px}
+  .card{max-width:720px;width:100%}
+</style>
+<div id="app">Loading…</div>
+<script type="module">
+import { qs } from '../lib/utils.js';
+
+const params = new URLSearchParams(location.search);
+const card   = qs('card','hanlove');
+const list   = qs('list','default');
+
+const REGISTRY = {
+  hanlove: { tpl: '/cards/hanlove/template.js', css: '/cards/hanlove/style.css', data: `/data/hanlove/${list}.json` },
+  healing: { tpl: '/cards/healing/template.js', css: '/cards/healing/style.css', data: `/data/healing/${list}.json` },
+};
+
+async function boot(){
+  const app = document.getElementById('app');
+  const cfg = REGISTRY[card];
+  if(!cfg){ app.textContent = 'Unknown card'; return; }
+  // CSS inject
+  const link = document.createElement('link'); link.rel='stylesheet'; link.href=cfg.css; document.head.appendChild(link);
+  // Data
+  let data = null;
+  try{ const r = await fetch(cfg.data, {cache:'no-store'}); if(!r.ok) throw new Error('json404'); data = await r.json(); }
+  catch(e){ const r = await fetch('/fallback.json'); data = await r.json(); }
+  // Render
+  const mod = await import(cfg.tpl);
+  const view = await mod.render({ data, params });
+  app.innerHTML=''; app.appendChild(view);
+}
+boot();
+</script>
+</html>
