@@ -2,7 +2,7 @@
 <title>Data Editor · Link Maker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
-  :root{--bg:#0b1020;--card:#121a36;--line:#3a4368;--fg:#fff;--muted:#94a3b8}
+  :root{--bg:#0b1020;--card:#121a36;--line:#3a4368;--fg:#fff;--muted:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444}
   body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--fg)}
   .wrap{max-width:1100px;margin:24px auto;padding:0 20px}
   h2{margin:0 0 10px}
@@ -28,6 +28,10 @@
   .muted{color:var(--muted);font-size:12px}
   .status{padding:6px 10px;border-radius:10px;background:#0f1530;border:1px solid var(--line)}
   .grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+  .badge{border-radius:999px;padding:6px 10px;font-size:12px;border:1px solid var(--line);background:#0f1530}
+  .badge.ok{border-color:#14532d;background:#052e16;color:var(--ok)}
+  .badge.warn{border-color:#78350f;background:#1f1004;color:var(--warn)}
+  .badge.err{border-color:#7f1d1d;background:#2f0d0d;color:var(--err)}
 </style>
 
 <div class="wrap">
@@ -36,6 +40,7 @@
     <h2 style="margin:0">저장소 편집기</h2>
     <span class="pill">/data/&lt;card&gt;/&lt;list&gt;.json</span>
     <span class="right muted" id="repoInfo"></span>
+    <span id="deployBadge" class="badge">Idle</span>
   </div>
 
   <!-- 1) 카드 탭 -->
@@ -44,13 +49,15 @@
     <div class="tab" data-card="healing">힐링메세지</div>
   </div>
 
-  <!-- 2) 그룹(리스트) 탭 + 프리셋 -->
+  <!-- 2) 그룹(리스트) 탭 + 프리셋 + 이름변경/삭제 -->
   <div class="card">
     <div class="grid">
       <div><b>그룹(리스트)</b> <span class="muted">엑셀 시트처럼 탭 전환</span></div>
       <div class="right">
         <input id="newListName" placeholder="새 그룹 이름(예: default, bible30, poem)"/>
         <button class="btn small" id="addListBtn">+ 그룹 추가</button>
+        <button class="btn small ghost" id="renameListBtn">이름 변경</button>
+        <button class="btn small danger" id="deleteListBtn">삭제</button>
         <button class="btn small ghost" id="refreshListsBtn">목록 새로고침</button>
       </div>
     </div>
@@ -63,7 +70,7 @@
       <button class="btn small ghost" data-preset="C">C) 시(詩)</button>
       <span class="muted">→ 클릭하면 템플릿으로 새 그룹이 만들어집니다.</span>
     </div>
-    <div class="muted">※ v0은 JSON을 파일로 저장(다운로드) 또는 GitHub 커밋(선택)으로 생성/갱신합니다.</div>
+    <div class="muted">※ 저장은 “JSON 다운로드” 또는 “GitHub 커밋(선택)”으로 수행됩니다.</div>
   </div>
 
   <!-- 3) 에디터 헤더 -->
@@ -90,13 +97,13 @@
   <!-- 5) GitHub 커밋(옵션) -->
   <div class="card" id="ghBox" style="display:none">
     <div class="grid">
-      <div><b>GitHub 저장 (선택)</b><div class="muted">토큰은 브라우저 메모리에만 임시 사용·저장 안 함</div></div>
+      <div><b>GitHub 저장 (선택)</b><div class="muted">토큰은 저장하지 않습니다(브라우저 메모리 임시 사용)</div></div>
     </div>
     <div class="row">
       <input id="ghOwner" placeholder="owner" value="Inspire-wood">
       <input id="ghRepo"  placeholder="repo"  value="inspire-linkmaker">
       <input id="ghBranch" placeholder="branch" value="main">
-      <input id="ghToken" placeholder="Personal Access Token (Optional for listing/commit)" type="password">
+      <input id="ghToken" placeholder="Personal Access Token" type="password">
     </div>
     <div class="row">
       <button id="doCommitBtn">이 파일 커밋</button>
@@ -118,81 +125,117 @@ const state = {
   card: 'hanlove',
   lists: { hanlove: ['default'], healing: [] },
   list: 'default',
-  data: { meta:{}, items:[] }
+  data: { meta:{}, items:[] },
+  lastCommittedJson: null
 };
 
 const $  = (q)=>document.querySelector(q);
 const $$ = (q)=>document.querySelectorAll(q);
 
+/* ------------------------- LocalStorage (owner/repo/branch 기억) ------------------------- */
+const LS_KEYS = { owner:'lm.owner', repo:'lm.repo', branch:'lm.branch' };
+function loadRepoFromLS(){
+  const o = localStorage.getItem(LS_KEYS.owner); if(o) { GITHUB_OWNER=o; $('#ghOwner').value=o; }
+  const r = localStorage.getItem(LS_KEYS.repo);  if(r) { GITHUB_REPO=r;  $('#ghRepo').value=r; }
+  const b = localStorage.getItem(LS_KEYS.branch);if(b) { GITHUB_BRANCH=b;$('#ghBranch').value=b; }
+  $('#repoInfo').textContent = `${GITHUB_OWNER}/${GITHUB_REPO}@${GITHUB_BRANCH}`;
+}
+function bindRepoLS(){
+  ['ghOwner','ghRepo','ghBranch'].forEach(id=>{
+    const el = document.getElementById(id);
+    el?.addEventListener('input', ()=>{
+      GITHUB_OWNER  = $('#ghOwner').value.trim() || GITHUB_OWNER;
+      GITHUB_REPO   = $('#ghRepo').value.trim()  || GITHUB_REPO;
+      GITHUB_BRANCH = $('#ghBranch').value.trim()|| GITHUB_BRANCH;
+      localStorage.setItem(LS_KEYS.owner, GITHUB_OWNER);
+      localStorage.setItem(LS_KEYS.repo,  GITHUB_REPO);
+      localStorage.setItem(LS_KEYS.branch,GITHUB_BRANCH);
+      $('#repoInfo').textContent = `${GITHUB_OWNER}/${GITHUB_REPO}@${GITHUB_BRANCH}`;
+    });
+  });
+}
+
 /* ------------------------- GitHub API ------------------------- */
+function ghHeaders(){
+  const t = $('#ghToken')?.value?.trim();
+  const h = { 'Accept':'application/vnd.github+json' };
+  if(t) h['Authorization'] = `token ${t}`;
+  return h;
+}
 async function ghListJsonFiles(card){
-  const token = $('#ghToken')?.value?.trim();
-  const headers = token ? { 'Authorization': `token ${token}` } : {};
-  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data/${encodeURIComponent(card)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`;
+  const headers = ghHeaders();
+  const url = `https://api.github.com/repos/${encodeURIComponent(GITHUB_OWNER)}/${encodeURIComponent(GITHUB_REPO)}/contents/data/${encodeURIComponent(card)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`;
   try{
     const r = await fetch(url, { headers });
     if(!r.ok) throw new Error('list fail');
     const arr = await r.json();
     const lists = arr.filter(x=>x.type==='file' && x.name.endsWith('.json'))
                      .map(x=>x.name.replace(/\.json$/,''));
-    // 알파벳/숫자순 정렬, default 가장 앞으로
     lists.sort((a,b)=>a.localeCompare(b,'en'));
     const i = lists.indexOf('default'); if(i>0){ lists.splice(i,1); lists.unshift('default'); }
     return lists;
-  }catch(e){
-    return null;
-  }
-}
-
-/* ------------------------- 유틸 ------------------------- */
-function pathFor(card=listState().card, list=listState().list){
-  return `/data/${card}/${list}.json`;
-}
-function listState(){ return { card: state.card, list: state.list }; }
-async function fetchJSON(p){
-  try{
-    const r = await fetch(p, {cache:'no-store'});
-    if(!r.ok) throw new Error('404');
-    return await r.json();
   }catch(e){ return null; }
 }
-function download(filename, text){
-  const blob = new Blob([text], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+async function ghGetSha(path){ // path: data/...
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}?ref=${GITHUB_BRANCH}`;
+  const r = await fetch(url, {headers: ghHeaders()});
+  if(r.status===200){ const j=await r.json(); return j.sha; }
+  return null;
+}
+async function ghPutFile(path, jsonObj, message){
+  const body = {
+    message,
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(jsonObj,null,2)))),
+    branch: GITHUB_BRANCH
+  };
+  const sha = await ghGetSha(path);
+  if(sha) body.sha = sha;
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`;
+  const res = await fetch(url, {method:'PUT', headers: ghHeaders(), body: JSON.stringify(body)});
+  if(!res.ok){ throw new Error(await res.text()); }
+  return true;
+}
+async function ghDeleteFile(path, message){
+  const sha = await ghGetSha(path);
+  if(!sha) throw new Error('기존 파일을 찾지 못했습니다.');
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path)}`;
+  const body = { message, sha, branch: GITHUB_BRANCH };
+  const res = await fetch(url, {method:'DELETE', headers: ghHeaders(), body: JSON.stringify(body)});
+  if(!res.ok){ throw new Error(await res.text()); }
+  return true;
 }
 
 /* ------------------ 로마자 표기(업그레이드) ------------------ */
-/* Revised Romanization + 간단한 음가 반영(받침 k/t/p/ng, ㄹ r/l, ㅙ=we 등) */
 function romanizeKoPro(str=''){
   const BASE=0xAC00;
-  const CHO_INIT = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
-  const JUNG = ["a","ae","ya","yae","eo","e","yeo","ye","o","wa","wae","oe","yo","u","wo","we","wi","yu","eu","ui","i"];
-  // 사용자 선호 반영: ㅙ(index 10) → we
-  JUNG[10] = "we";
+  const CHO = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
+  const JUNG = ["a","ae","ya","yae","eo","e","yeo","ye","o","wa","we","oe","yo","u","wo","we","wi","yu","eu","ui","i"];
   const JONG = ["", "k","k","ks","n","nj","nh","t","l","lk","lm","lb","ls","lt","lp","lt","m","p","ps","t","t","ng","t","t","k","t","p","t"];
-
-  const syls = [];
-  for(const ch of str){
-    const code = ch.charCodeAt(0);
-    if(code < 0xAC00 || code > 0xD7A3){ syls.push(ch); continue; }
-    const S = code - BASE;
-    const cho  = Math.floor(S/588);
-    const jung = Math.floor((S%588)/28);
-    const jong = S%28;
-
-    let lead = CHO_INIT[cho] || "";
-    // 초성 ㄹ은 r, 종성·중간연결 ㄹ은 l이 자연스러움
-    if(lead==='r') lead = 'r';
-    if(lead==='') lead = ''; // ㅇ 무음
-
-    let mid  = JUNG[jung] || "";
-    let tail = JONG[jong] || "";
-
-    syls.push(lead + mid + tail);
+  const out=[]; for(const ch of str){
+    const code=ch.charCodeAt(0);
+    if(code<0xAC00||code>0xD7A3){ out.push(ch); continue; }
+    const S=code-BASE, cho=Math.floor(S/588), jung=Math.floor((S%588)/28), jong=S%28;
+    const lead = CHO[cho]||"", mid=JUNG[jung]||"", tail=JONG[jong]||"";
+    out.push(lead+mid+tail);
   }
-  return syls.join('-').replace(/-+/g,'-');
+  return out.join('-').replace(/-+/g,'-');
+}
+
+/* ------------------------- 유틸 ------------------------- */
+function pathFor(card=listState().card, list=listState().list){ return `/data/${card}/${list}.json`; }
+function listState(){ return { card: state.card, list: state.list }; }
+async function fetchJSON(p){
+  try{ const r = await fetch(p, {cache:'no-store'}); if(!r.ok) throw 0; return await r.json(); }
+  catch(e){ return null; }
+}
+function download(filename, text){
+  const blob = new Blob([text], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+function setBadge(type,text){
+  const el = $('#deployBadge');
+  el.className = 'badge ' + (type||'');
+  el.textContent = text;
 }
 
 /* ------------------------- UI ------------------------- */
@@ -204,7 +247,6 @@ function renderCardTabs(){
   $$('#cardTabs .tab').forEach(el=>{
     el.onclick = async ()=>{
       state.card = el.dataset.card;
-      // 카드 전환 시 lists 자동 로드
       await refreshLists();
       state.list = state.lists[state.card][0] || 'default';
       togglePresetBox();
@@ -212,10 +254,7 @@ function renderCardTabs(){
     };
   });
 }
-function togglePresetBox(){
-  $('#presetBox').style.display = (state.card==='healing') ? 'block' : 'none';
-}
-
+function togglePresetBox(){ $('#presetBox').style.display = (state.card==='healing') ? 'block' : 'none'; }
 function renderListTabs(){
   const lists = state.lists[state.card] || [];
   $('#listTabs').innerHTML = lists.map(x=>`<div class="tab ${state.list===x?'active':''}" data-list="${x}">${x}</div>`).join('');
@@ -236,7 +275,7 @@ function renderHeader(){
         <th>한국어 발음(영문)</th>
         <th>영어 의미</th>
         <th style="width:70px">가중</th>
-        <th style="width:100px">상태</th>
+        <th style="width:120px">상태</th>
         <th style="width:60px"></th>
       </tr>`;
     $('#editorHeader').innerHTML = `<b>한글사랑</b> · <span class="muted">한글 입력 시 발음(영문) 자동 제안 — 예: 괜찮아 → gwen-cha-na</span>`;
@@ -247,7 +286,7 @@ function renderHeader(){
         <th>텍스트</th>
         <th>태그(쉼표)</th>
         <th style="width:70px">가중</th>
-        <th style="width:100px">상태</th>
+        <th style="width:120px">상태</th>
         <th style="width:60px"></th>
       </tr>`;
     $('#editorHeader').innerHTML = `<b>힐링메세지</b> · <span class="muted">그룹(리스트)별 관리 · A/B/C 프리셋으로 빠르게 시작</span>`;
@@ -355,81 +394,101 @@ $('#downloadBtn').onclick = ()=>{
   const fn = pathFor().replace('/data/','').replace(/\//g,'__');
   download(fn, JSON.stringify(state.data,null,2));
 };
-$('#commitBtn').onclick = ()=>{ $('#ghBox').style.display='block'; };
+$('#commitBtn').onclick = ()=>{ $('#ghBox').style.display='block'; bindRepoLS(); loadRepoFromLS(); };
 $('#doCommitBtn').onclick = doCommit;
 
+/* ------------------------- 커밋 & 배포 감지 ------------------------- */
 async function doCommit(){
-  const owner = $('#ghOwner').value.trim();
-  const repo  = $('#ghRepo').value.trim();
-  const branch= $('#ghBranch').value.trim();
-  const token = $('#ghToken').value.trim();
   const path  = pathFor().replace(/^\//,''); // data/...
   const msgEl = $('#ghMsg'); msgEl.textContent='커밋 중…';
-
-  const headers = { 'Authorization': `token ${token}`, 'Accept':'application/vnd.github+json' };
-
-  // sha 조회(있으면 update, 없으면 create)
-  let sha = null;
-  const getUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${branch}`;
-  const getRes = await fetch(getUrl, {headers});
-  if(getRes.status===200){ const j=await getRes.json(); sha=j.sha; }
-
-  const putUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-  const body = {
-    message: `chore: update ${path}`,
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(state.data,null,2)))),
-    branch
-  };
-  if(sha) body.sha = sha;
-
-  const putRes = await fetch(putUrl, {method:'PUT', headers, body: JSON.stringify(body)});
-  if(putRes.status>=200 && putRes.status<300){ msgEl.textContent='성공! 레포에 커밋되었습니다.'; }
-  else{ const t = await putRes.text(); msgEl.textContent='실패: '+t; }
+  try{
+    await ghPutFile(path, state.data, `chore: update ${path}`);
+    msgEl.textContent='성공! 레포에 커밋되었습니다.';
+    state.lastCommittedJson = JSON.stringify(state.data); // 배포 감지용
+    setBadge('warn','Deploying…');
+    pollDeployment(path, state.lastCommittedJson); // 비동기 감시 시작
+    await refreshLists(); // 새 파일이면 목록에도 반영
+  }catch(e){
+    msgEl.textContent='실패: '+e.message;
+    setBadge('err','Commit failed');
+  }
 }
 
-/* ------------------------- 그룹 추가/탭 전환 ------------------------- */
+/* 같은 오리진의 /data/... 를 주기적으로 fetch해서 새 빌드 반영되면 OK */
+async function pollDeployment(path, expectedJson, timeoutMs=180000, intervalMs=4000){
+  const start = Date.now();
+  while(Date.now()-start < timeoutMs){
+    try{
+      const r = await fetch('/'+path+`?t=${Date.now()}`, {cache:'no-store'});
+      if(r.ok){
+        const j = await r.json();
+        if(JSON.stringify(j) === expectedJson){
+          setBadge('ok','Deployed ✓');
+          return;
+        }
+      }
+    }catch(e){}
+    await new Promise(res=>setTimeout(res, intervalMs));
+  }
+  setBadge('warn','Deploy check timed out');
+}
+
+/* ------------------------- 그룹 추가/이름변경/삭제 ------------------------- */
 $('#addListBtn').onclick = ()=>{
-  const name = $('#newListName').value.trim();
-  if(!name) return alert('그룹 이름을 입력하세요. 예) default, bible30, poem');
+  const name = ($('#newListName').value||'').trim();
+  if(!/^[a-z0-9\-]+$/.test(name)) return alert('그룹 이름은 소문자/숫자/하이픈만 권장합니다. 예: bible30, poem');
   if(!state.lists[state.card]) state.lists[state.card] = [];
   if(!state.lists[state.card].includes(name)) state.lists[state.card].push(name);
   state.list = name; $('#newListName').value='';
   renderListTabs(); syncPath(); state.data = skeleton(state.card); renderHeader(); renderRows();
 };
 
-/* 프리셋: 힐링 전용 */
-$('#presetBox').addEventListener('click', (e)=>{
-  const btn = e.target.closest('button[data-preset]'); if(!btn) return;
-  const code = btn.dataset.preset;
-  let name = prompt(`새 그룹 이름을 입력하세요 (예: healing-a, bible30, poem)`, code==='A'?'healing-a': code==='B'?'bible30':'poem');
-  if(!name) return;
-  if(!state.lists.healing.includes(name)) state.lists.healing.push(name);
-  state.card = 'healing'; state.list = name; renderCardTabs(); renderListTabs(); togglePresetBox(); syncPath();
-  // 템플릿 데이터 주입
-  if(code==='A'){ // 힐링메세지
-    state.data = { meta:{list:name,lang:'ko',credit:'출처 표기'}, items:[
-      {id:newId('HLG'), text:'당신의 오늘이 따뜻하길', tags:['위로'], weight:1, status:'APPROVED'},
-      {id:newId('HLG'), text:'괜찮아, 여기까지 잘 왔어', tags:['격려'], weight:1, status:'DRAFT'}
-    ]};
-  }else if(code==='B'){ // 성구30
-    state.data = { meta:{list:name,lang:'ko',credit:'성경: 개역개정'}, items:[
-      {id:'BJ-016', text:'주는 그리스도시요 살아계신 하나님의 아들이시니이다. (마16:16)', tags:['성경'], weight:1, status:'APPROVED'},
-      {id:'PS-023', text:'여호와는 나의 목자시니 내게 부족함이 없으리로다. (시23:1)', tags:['성경'], weight:1, status:'APPROVED'}
-    ]};
-  }else{ // C 시(詩)
-    state.data = { meta:{list:name,lang:'ko',credit:'시 출처 표기'}, items:[
-      {id:newId('POEM'), text:'나 보기가 역겨워 가실 때에는(— 김소월 「진달래꽃」)', tags:['시'], weight:1, status:'DRAFT'}
-    ]};
+$('#renameListBtn').onclick = async ()=>{
+  const oldName = state.list;
+  const newName = prompt(`"${oldName}" → 새 이름(소문자/숫자/하이픈 권장)`, oldName.replace(/[A-Z ]/g, s=>s.toLowerCase().trim().replace(/\s+/g,'-')));
+  if(!newName || newName===oldName) return;
+  if(!/^[a-z0-9\-]+$/.test(newName)) return alert('이름 형식이 올바르지 않습니다.');
+  // 1) 새 경로로 현재 state.data 커밋
+  const newPath = `data/${state.card}/${newName}.json`;
+  const oldPath = `data/${state.card}/${oldName}.json`;
+  try{
+    await ghPutFile(newPath, state.data, `chore: rename ${oldPath} -> ${newPath}`);
+    // 2) 기존 파일 삭제
+    await ghDeleteFile(oldPath, `chore: remove ${oldPath} (renamed to ${newPath})`);
+    // 3) UI 갱신
+    const arr = state.lists[state.card];
+    const idx = arr.indexOf(oldName); if(idx>-1) arr.splice(idx,1,newName);
+    state.list = newName; renderListTabs(); syncPath();
+    setBadge('warn','Deploying…'); state.lastCommittedJson = JSON.stringify(state.data);
+    pollDeployment(newPath, state.lastCommittedJson);
+    alert('이름 변경 및 커밋 완료');
+  }catch(e){
+    alert('이름 변경 실패: '+e.message);
   }
-  renderHeader(); renderRows();
-});
+};
+
+$('#deleteListBtn').onclick = async ()=>{
+  if(!confirm(`"${state.list}" 그룹을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+  const name = state.list;
+  const path = `data/${state.card}/${name}.json`;
+  try{
+    await ghDeleteFile(path, `chore: delete ${path}`);
+    const arr = state.lists[state.card]; const idx = arr.indexOf(name); if(idx>-1) arr.splice(idx,1);
+    state.list = arr[0] || (state.card==='healing'?'bible30':'default');
+    renderListTabs(); syncPath(); await loadCurrent();
+    setBadge('warn','Deploying…'); // 삭제도 배포 대기
+    pollDeployment(path, ''); // 존재하지 않음을 확인할 수 없지만 타임아웃되어도 괜찮음
+    alert('삭제 완료');
+  }catch(e){
+    alert('삭제 실패: '+e.message);
+  }
+};
 
 /* 목록 새로고침: GitHub 탐색 */
 async function refreshLists(){
   const lists = await ghListJsonFiles(state.card);
   if(lists && lists.length){ state.lists[state.card] = lists; }
   else if(!state.lists[state.card]?.length){
-    // fallback
     state.lists[state.card] = state.card==='healing' ? ['bible30'] : ['default'];
   }
   renderListTabs();
@@ -439,12 +498,39 @@ async function refreshLists(){
 async function boot(){
   renderCardTabs();
   togglePresetBox();
-  await refreshLists();       // 초기 카드: hanlove
+  await refreshLists();
   state.list = state.lists[state.card][0] || 'default';
   renderListTabs();
   syncPath();
   loadCurrent();
+  setBadge('', 'Idle');
 }
 $('#refreshListsBtn').onclick = refreshLists;
 boot();
+
+/* ------------------------- 힐링 프리셋 ------------------------- */
+document.getElementById('presetBox').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-preset]'); if(!btn) return;
+  const code = btn.dataset.preset;
+  let name = prompt(`새 그룹 이름을 입력하세요 (예: healing-a, bible30, poem)`, code==='A'?'healing-a': code==='B'?'bible30':'poem');
+  if(!name) return;
+  if(!state.lists.healing.includes(name)) state.lists.healing.push(name);
+  state.card = 'healing'; state.list = name; renderCardTabs(); renderListTabs(); togglePresetBox(); syncPath();
+  if(code==='A'){
+    state.data = { meta:{list:name,lang:'ko',credit:'출처 표기'}, items:[
+      {id:newId('HLG'), text:'당신의 오늘이 따뜻하길', tags:['위로'], weight:1, status:'APPROVED'},
+      {id:newId('HLG'), text:'괜찮아, 여기까지 잘 왔어', tags:['격려'], weight:1, status:'DRAFT'}
+    ]};
+  }else if(code==='B'){
+    state.data = { meta:{list:name,lang:'ko',credit:'성경: 개역개정'}, items:[
+      {id:'BJ-016', text:'주는 그리스도시요 살아계신 하나님의 아들이시니이다. (마16:16)', tags:['성경'], weight:1, status:'APPROVED'},
+      {id:'PS-023', text:'여호와는 나의 목자시니 내게 부족함이 없으리로다. (시23:1)', tags:['성경'], weight:1, status:'APPROVED'}
+    ]};
+  }else{
+    state.data = { meta:{list:name,lang:'ko',credit:'시 출처 표기'}, items:[
+      {id:newId('POEM'), text:'나 보기가 역겨워 가실 때에는(— 김소월 「진달래꽃」)', tags:['시'], weight:1, status:'DRAFT'}
+    ]};
+  }
+  renderHeader(); renderRows();
+});
 </script>
