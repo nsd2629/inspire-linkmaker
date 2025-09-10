@@ -14,7 +14,11 @@ import { qs } from '../lib/utils.js';
 
 const params = new URLSearchParams(location.search);
 const card   = qs('card','hanlove');
-const list   = qs('list','default');
+const listParam = qs('list', null);
+// healing은 기본을 bible30으로
+const list   = (card==='healing')
+  ? (listParam && listParam !== 'default' ? listParam : 'bible30')
+  : (listParam || 'default');
 
 const REGISTRY = {
   hanlove: { tpl: '/cards/hanlove/template.js', css: '/cards/hanlove/style.css', data: `/data/hanlove/${list}.json` },
