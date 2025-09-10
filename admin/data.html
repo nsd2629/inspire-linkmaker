@@ -6,7 +6,8 @@
   body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--fg)}
   .wrap{max-width:1100px;margin:24px auto;padding:0 20px}
   h2{margin:0 0 10px}
-  .tabs{display:flex;gap:8px;margin:8px 0 16px}
+  .bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+  .tabs{display:flex;gap:8px;margin:8px 0 16px;flex-wrap:wrap}
   .tab{background:var(--card);border:1px solid var(--line);padding:8px 12px;border-radius:12px;cursor:pointer}
   .tab.active{outline:2px solid #5b77ff}
   .pill{font-size:12px;color:var(--muted)}
@@ -15,22 +16,27 @@
   input,select,button,textarea{border-radius:12px;border:1px solid var(--line);background:#0f1530;color:#fff}
   input,select,textarea{padding:10px}
   button{padding:10px 14px;background:#5b77ff;border:0;cursor:pointer}
+  .btn{padding:10px 14px}
+  .btn.ghost{background:transparent;border:1px dashed var(--line)}
+  .btn.small{font-size:12px;padding:6px 8px}
+  .btn.danger{background:#ff5b5b}
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
   th{font-weight:600;text-align:left}
   td input,td select,td textarea{width:100%}
   .right{margin-left:auto}
   .muted{color:var(--muted);font-size:12px}
-  .danger{background:#ff5b5b}
-  .ghost{background:transparent;border:1px dashed var(--line)}
-  .small{font-size:12px;padding:6px 8px}
-  .foot{display:flex;gap:8px;align-items:center;margin-top:12px}
   .status{padding:6px 10px;border-radius:10px;background:#0f1530;border:1px solid var(--line)}
   .grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 </style>
 
 <div class="wrap">
-  <h2>저장소 편집기 <span class="pill">/data/&lt;card&gt;/&lt;list&gt;.json</span></h2>
+  <div class="bar">
+    <a href="/admin/" class="btn ghost">← 운영 대시보드로</a>
+    <h2 style="margin:0">저장소 편집기</h2>
+    <span class="pill">/data/&lt;card&gt;/&lt;list&gt;.json</span>
+    <span class="right muted" id="repoInfo"></span>
+  </div>
 
   <!-- 1) 카드 탭 -->
   <div class="tabs" id="cardTabs">
@@ -38,26 +44,32 @@
     <div class="tab" data-card="healing">힐링메세지</div>
   </div>
 
-  <!-- 2) 그룹(리스트) 탭 -->
+  <!-- 2) 그룹(리스트) 탭 + 프리셋 -->
   <div class="card">
     <div class="grid">
       <div><b>그룹(리스트)</b> <span class="muted">엑셀 시트처럼 탭 전환</span></div>
       <div class="right">
         <input id="newListName" placeholder="새 그룹 이름(예: default, bible30, poem)"/>
-        <button class="small" id="addListBtn">+ 그룹 추가</button>
+        <button class="btn small" id="addListBtn">+ 그룹 추가</button>
+        <button class="btn small ghost" id="refreshListsBtn">목록 새로고침</button>
       </div>
     </div>
-    <div class="tabs" id="listTabs">
-      <!-- 동적 생성 -->
+    <div class="tabs" id="listTabs"></div>
+
+    <div class="row" id="presetBox" style="display:none">
+      <span class="muted">힐링 프리셋:</span>
+      <button class="btn small ghost" data-preset="A">A) 힐링메세지</button>
+      <button class="btn small ghost" data-preset="B">B) 성구30</button>
+      <button class="btn small ghost" data-preset="C">C) 시(詩)</button>
+      <span class="muted">→ 클릭하면 템플릿으로 새 그룹이 만들어집니다.</span>
     </div>
-    <div class="muted">※ v0은 미리 이름을 입력해 만들고 저장(다운로드/커밋)하면 파일이 생성됩니다.</div>
+    <div class="muted">※ v0은 JSON을 파일로 저장(다운로드) 또는 GitHub 커밋(선택)으로 생성/갱신합니다.</div>
   </div>
 
   <!-- 3) 에디터 헤더 -->
   <div class="row">
     <div class="status" id="pathBadge">/data/hanlove/default.json</div>
-    <button class="ghost small" id="reloadBtn">불러오기</button>
-    <span class="muted">불러오기 실패 시 기본 스켈레톤으로 시작</span>
+    <button class="btn small ghost" id="reloadBtn">불러오기</button>
   </div>
 
   <!-- 4) 표 에디터 -->
@@ -67,11 +79,11 @@
       <thead></thead>
       <tbody></tbody>
     </table>
-    <div class="foot">
+    <div class="row">
       <button id="addRowBtn">+ 항목 추가</button>
       <div class="right"></div>
       <button id="downloadBtn">JSON 다운로드</button>
-      <button id="commitBtn" class="ghost">GitHub 커밋(선택)</button>
+      <button id="commitBtn" class="btn ghost">GitHub 커밋(선택)</button>
     </div>
   </div>
 
@@ -84,7 +96,7 @@
       <input id="ghOwner" placeholder="owner" value="Inspire-wood">
       <input id="ghRepo"  placeholder="repo"  value="inspire-linkmaker">
       <input id="ghBranch" placeholder="branch" value="main">
-      <input id="ghToken" placeholder="Personal Access Token" type="password">
+      <input id="ghToken" placeholder="Personal Access Token (Optional for listing/commit)" type="password">
     </div>
     <div class="row">
       <button id="doCommitBtn">이 파일 커밋</button>
@@ -92,35 +104,57 @@
     </div>
     <div class="row"><div id="ghMsg" class="muted"></div></div>
   </div>
-
 </div>
 
 <script>
+/* ----------------------- 설정 (필요 시 수정) ----------------------- */
+let GITHUB_OWNER  = 'Inspire-wood';
+let GITHUB_REPO   = 'inspire-linkmaker';
+let GITHUB_BRANCH = 'main';
+document.getElementById('repoInfo').textContent = `${GITHUB_OWNER}/${GITHUB_REPO}@${GITHUB_BRANCH}`;
+
 /* ------------------------- 상태 ------------------------- */
 const state = {
   card: 'hanlove',
-  lists: { hanlove: ['default'], healing: ['bible30'] },
+  lists: { hanlove: ['default'], healing: [] },
   list: 'default',
   data: { meta:{}, items:[] }
 };
 
-const $ = (q)=>document.querySelector(q);
+const $  = (q)=>document.querySelector(q);
 const $$ = (q)=>document.querySelectorAll(q);
 
-/* ------------------------- 로딩/저장 도우미 ------------------------- */
+/* ------------------------- GitHub API ------------------------- */
+async function ghListJsonFiles(card){
+  const token = $('#ghToken')?.value?.trim();
+  const headers = token ? { 'Authorization': `token ${token}` } : {};
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data/${encodeURIComponent(card)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`;
+  try{
+    const r = await fetch(url, { headers });
+    if(!r.ok) throw new Error('list fail');
+    const arr = await r.json();
+    const lists = arr.filter(x=>x.type==='file' && x.name.endsWith('.json'))
+                     .map(x=>x.name.replace(/\.json$/,''));
+    // 알파벳/숫자순 정렬, default 가장 앞으로
+    lists.sort((a,b)=>a.localeCompare(b,'en'));
+    const i = lists.indexOf('default'); if(i>0){ lists.splice(i,1); lists.unshift('default'); }
+    return lists;
+  }catch(e){
+    return null;
+  }
+}
+
+/* ------------------------- 유틸 ------------------------- */
 function pathFor(card=listState().card, list=listState().list){
   return `/data/${card}/${list}.json`;
 }
 function listState(){ return { card: state.card, list: state.list }; }
-
 async function fetchJSON(p){
   try{
     const r = await fetch(p, {cache:'no-store'});
     if(!r.ok) throw new Error('404');
     return await r.json();
-  }catch(e){
-    return null;
-  }
+  }catch(e){ return null; }
 }
 function download(filename, text){
   const blob = new Blob([text], {type:'application/json'});
@@ -129,45 +163,57 @@ function download(filename, text){
   a.download = filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ------------------------- 로마나이즈 (간단 제안) ------------------------- */
-/* 한국어 → 영문 발음 자동 제안(간단 규칙). 필요 시 직접 수정 가능. */
-function romanizeKo(str=''){
-  // 한글 음절 분해 기반 아주 단순한 표기(발음 가이드 용도)
-  const CHO = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
-  const JUNG = {
-    0:"a",1:"ae",2:"ya",3:"yae",4:"eo",5:"e",6:"yeo",7:"ye",8:"o",9:"wa",10:"wae",11:"oe",12:"yo",
-    13:"u",14:"wo",15:"we",16:"wi",17:"yu",18:"eu",19:"ui",20:"i"
-  };
-  // 사용자 예시에 맞춰 ㅙ를 we로 간소화
+/* ------------------ 로마자 표기(업그레이드) ------------------ */
+/* Revised Romanization + 간단한 음가 반영(받침 k/t/p/ng, ㄹ r/l, ㅙ=we 등) */
+function romanizeKoPro(str=''){
+  const BASE=0xAC00;
+  const CHO_INIT = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
+  const JUNG = ["a","ae","ya","yae","eo","e","yeo","ye","o","wa","wae","oe","yo","u","wo","we","wi","yu","eu","ui","i"];
+  // 사용자 선호 반영: ㅙ(index 10) → we
   JUNG[10] = "we";
-  const JONG = ["","k","k","ks","n","nj","nh","t","l","lk","lm","lb","ls","lt","lp","lt","m","p","ps","t","t","ng","t","t","k","t","p","t"];
-  const base = 0xAC00;
-  let out = [];
-  for (const ch of str){
+  const JONG = ["", "k","k","ks","n","nj","nh","t","l","lk","lm","lb","ls","lt","lp","lt","m","p","ps","t","t","ng","t","t","k","t","p","t"];
+
+  const syls = [];
+  for(const ch of str){
     const code = ch.charCodeAt(0);
-    if (code < 0xAC00 || code > 0xD7A3){ out.push(ch); continue; }
-    const idx = code - base;
-    const cho = Math.floor(idx / 588);
-    const jung = Math.floor((idx % 588) / 28);
-    const jong = idx % 28;
-    const lead = CHO[cho] || "";
-    const mid  = JUNG[jung] || "";
-    const tail = JONG[jong] || "";
-    out.push(lead + mid + tail);
+    if(code < 0xAC00 || code > 0xD7A3){ syls.push(ch); continue; }
+    const S = code - BASE;
+    const cho  = Math.floor(S/588);
+    const jung = Math.floor((S%588)/28);
+    const jong = S%28;
+
+    let lead = CHO_INIT[cho] || "";
+    // 초성 ㄹ은 r, 종성·중간연결 ㄹ은 l이 자연스러움
+    if(lead==='r') lead = 'r';
+    if(lead==='') lead = ''; // ㅇ 무음
+
+    let mid  = JUNG[jung] || "";
+    let tail = JONG[jong] || "";
+
+    syls.push(lead + mid + tail);
   }
-  // 하이픈으로 시각 분리
-  return out.join('-').replace(/-+/g,'-');
+  return syls.join('-').replace(/-+/g,'-');
 }
 
-/* ------------------------- UI 만들기 ------------------------- */
+/* ------------------------- UI ------------------------- */
 function renderCardTabs(){
   $('#cardTabs').innerHTML = `
     <div class="tab ${state.card==='hanlove'?'active':''}" data-card="hanlove">한글사랑</div>
     <div class="tab ${state.card==='healing'?'active':''}" data-card="healing">힐링메세지</div>
   `;
   $$('#cardTabs .tab').forEach(el=>{
-    el.onclick = ()=>{ state.card = el.dataset.card; state.list = state.lists[state.card][0] || 'default'; syncPath(); renderListTabs(); loadCurrent(); };
+    el.onclick = async ()=>{
+      state.card = el.dataset.card;
+      // 카드 전환 시 lists 자동 로드
+      await refreshLists();
+      state.list = state.lists[state.card][0] || 'default';
+      togglePresetBox();
+      syncPath(); renderListTabs(); loadCurrent();
+    };
   });
+}
+function togglePresetBox(){
+  $('#presetBox').style.display = (state.card==='healing') ? 'block' : 'none';
 }
 
 function renderListTabs(){
@@ -177,7 +223,6 @@ function renderListTabs(){
     el.onclick = ()=>{ state.list = el.dataset.list; syncPath(); loadCurrent(); };
   });
 }
-
 function syncPath(){ $('#pathBadge').textContent = pathFor(); }
 
 /* 테이블 헤더 */
@@ -194,7 +239,7 @@ function renderHeader(){
         <th style="width:100px">상태</th>
         <th style="width:60px"></th>
       </tr>`;
-    $('#editorHeader').innerHTML = `<b>한글사랑</b> · <span class="muted">한글/발음/영어의미 필드 제공 (발음은 자동 제안 후 수정 가능)</span>`;
+    $('#editorHeader').innerHTML = `<b>한글사랑</b> · <span class="muted">한글 입력 시 발음(영문) 자동 제안 — 예: 괜찮아 → gwen-cha-na</span>`;
   }else{
     thead.innerHTML = `
       <tr>
@@ -205,7 +250,7 @@ function renderHeader(){
         <th style="width:100px">상태</th>
         <th style="width:60px"></th>
       </tr>`;
-    $('#editorHeader').innerHTML = `<b>힐링메세지</b> · <span class="muted">그룹(리스트)별로 관리 · A/B/C 처럼 원하는 이름으로 추가</span>`;
+    $('#editorHeader').innerHTML = `<b>힐링메세지</b> · <span class="muted">그룹(리스트)별 관리 · A/B/C 프리셋으로 빠르게 시작</span>`;
   }
 }
 
@@ -215,9 +260,7 @@ function renderRows(){
   const items = state.data.items || [];
   items.forEach((it, idx)=>{
     const tr = document.createElement('tr');
-    const common = `
-      <td><input value="${it.id||''}" data-k="id"></td>
-    `;
+    const common = `<td><input value="${it.id||''}" data-k="id"></td>`;
     if(state.card==='hanlove'){
       tr.innerHTML = common + `
         <td><input value="${it.text||''}" data-k="text" placeholder="예) 괜찮아"></td>
@@ -230,7 +273,7 @@ function renderRows(){
             <option ${it.status==='DRAFT'?'selected':''}>DRAFT</option>
           </select>
         </td>
-        <td><button class="danger small" data-del="${idx}">삭제</button></td>`;
+        <td><button class="btn small danger" data-del="${idx}">삭제</button></td>`;
     }else{
       tr.innerHTML = common + `
         <td><textarea rows="2" data-k="text" placeholder="예) 당신의 오늘이 따뜻하길">${it.text||''}</textarea></td>
@@ -242,12 +285,11 @@ function renderRows(){
             <option ${it.status==='DRAFT'?'selected':''}>DRAFT</option>
           </select>
         </td>
-        <td><button class="danger small" data-del="${idx}">삭제</button></td>`;
+        <td><button class="btn small danger" data-del="${idx}">삭제</button></td>`;
     }
     tb.appendChild(tr);
   });
 
-  // 이벤트: 값 바뀌면 state 반영
   tb.querySelectorAll('input,select,textarea').forEach(el=>{
     el.oninput = ()=>{
       const tr = el.closest('tr');
@@ -259,45 +301,37 @@ function renderRows(){
       state.data.items[idx][k] = v;
     };
   });
-  // 삭제
   tb.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.onclick = ()=>{ const i = Number(btn.dataset.del); state.data.items.splice(i,1); renderRows(); };
   });
 }
 
-/* ------------------------- 스켈레톤/유틸 ------------------------- */
+/* ------------------------- 스켈레톤/도우미 ------------------------- */
 function skeleton(card){
   if(card==='hanlove'){
-    return {
-      meta:{ list: state.list, lang:'ko', credit:'폰트: 무료 상업용' },
-      items:[ {id: newId('HL'), text:'', pron:'', en:'', weight:1, status:'DRAFT'} ]
-    };
+    return { meta:{ list: state.list, lang:'ko', credit:'폰트: 무료 상업용' }, items:[
+      {id:newId('HL'), text:'', pron:'', en:'', weight:1, status:'DRAFT'}
+    ]};
   }
-  return {
-    meta:{ list: state.list, lang:'ko', credit:'자료 출처 표기' },
-    items:[ {id: newId('HLG'), text:'', tags:[], weight:1, status:'DRAFT'} ]
-  };
+  return { meta:{ list: state.list, lang:'ko', credit:'자료 출처 표기' }, items:[
+    {id:newId('HLG'), text:'', tags:[], weight:1, status:'DRAFT'}
+  ]};
 }
 function newId(prefix){ const n = Math.floor(Math.random()*900+100); return `${prefix}-${n}`; }
-
-/* 행 추가 */
 function addRow(){
-  if(state.card==='hanlove'){
-    state.data.items.push({id:newId('HL'), text:'', pron:'', en:'', weight:1, status:'DRAFT'});
-  }else{
-    state.data.items.push({id:newId('HLG'), text:'', tags:[], weight:1, status:'DRAFT'});
-  }
+  if(state.card==='hanlove') state.data.items.push({id:newId('HL'), text:'', pron:'', en:'', weight:1, status:'DRAFT'});
+  else state.data.items.push({id:newId('HLG'), text:'', tags:[], weight:1, status:'DRAFT'});
   renderRows();
 }
 
-/* 한글 입력 시 발음 자동 제안 */
+/* 한글 입력 → 발음 자동 제안 */
 document.addEventListener('input',(e)=>{
   const el=e.target;
   if(state.card!=='hanlove') return;
   if(el && el.dataset && el.dataset.k==='text'){
     const tr = el.closest('tr');
     const idx = Array.from($('#tbl tbody').children).indexOf(tr);
-    const pron = romanizeKo(el.value);
+    const pron = romanizeKoPro(el.value);
     if(!state.data.items[idx].pron || state.data.items[idx].pron.trim()===''){
       state.data.items[idx].pron = pron;
       tr.querySelector('input[data-k="pron"]').value = pron;
@@ -311,16 +345,14 @@ async function loadCurrent(){
   const p = pathFor();
   const j = await fetchJSON(p);
   state.data = j || skeleton(state.card);
-  // 파일이 없을 때도 meta.list를 현재 리스트로 맞춤
   state.data.meta = state.data.meta || {};
   state.data.meta.list = state.list;
   renderRows();
 }
-
 $('#addRowBtn').onclick = addRow;
 $('#reloadBtn').onclick = loadCurrent;
 $('#downloadBtn').onclick = ()=>{
-  const fn = pathFor().replace('/data/','').replace(/\//g,'__'); // 예: hanlove__default.json
+  const fn = pathFor().replace('/data/','').replace(/\//g,'__');
   download(fn, JSON.stringify(state.data,null,2));
 };
 $('#commitBtn').onclick = ()=>{ $('#ghBox').style.display='block'; };
@@ -365,12 +397,54 @@ $('#addListBtn').onclick = ()=>{
   renderListTabs(); syncPath(); state.data = skeleton(state.card); renderHeader(); renderRows();
 };
 
+/* 프리셋: 힐링 전용 */
+$('#presetBox').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-preset]'); if(!btn) return;
+  const code = btn.dataset.preset;
+  let name = prompt(`새 그룹 이름을 입력하세요 (예: healing-a, bible30, poem)`, code==='A'?'healing-a': code==='B'?'bible30':'poem');
+  if(!name) return;
+  if(!state.lists.healing.includes(name)) state.lists.healing.push(name);
+  state.card = 'healing'; state.list = name; renderCardTabs(); renderListTabs(); togglePresetBox(); syncPath();
+  // 템플릿 데이터 주입
+  if(code==='A'){ // 힐링메세지
+    state.data = { meta:{list:name,lang:'ko',credit:'출처 표기'}, items:[
+      {id:newId('HLG'), text:'당신의 오늘이 따뜻하길', tags:['위로'], weight:1, status:'APPROVED'},
+      {id:newId('HLG'), text:'괜찮아, 여기까지 잘 왔어', tags:['격려'], weight:1, status:'DRAFT'}
+    ]};
+  }else if(code==='B'){ // 성구30
+    state.data = { meta:{list:name,lang:'ko',credit:'성경: 개역개정'}, items:[
+      {id:'BJ-016', text:'주는 그리스도시요 살아계신 하나님의 아들이시니이다. (마16:16)', tags:['성경'], weight:1, status:'APPROVED'},
+      {id:'PS-023', text:'여호와는 나의 목자시니 내게 부족함이 없으리로다. (시23:1)', tags:['성경'], weight:1, status:'APPROVED'}
+    ]};
+  }else{ // C 시(詩)
+    state.data = { meta:{list:name,lang:'ko',credit:'시 출처 표기'}, items:[
+      {id:newId('POEM'), text:'나 보기가 역겨워 가실 때에는(— 김소월 「진달래꽃」)', tags:['시'], weight:1, status:'DRAFT'}
+    ]};
+  }
+  renderHeader(); renderRows();
+});
+
+/* 목록 새로고침: GitHub 탐색 */
+async function refreshLists(){
+  const lists = await ghListJsonFiles(state.card);
+  if(lists && lists.length){ state.lists[state.card] = lists; }
+  else if(!state.lists[state.card]?.length){
+    // fallback
+    state.lists[state.card] = state.card==='healing' ? ['bible30'] : ['default'];
+  }
+  renderListTabs();
+}
+
 /* ------------------------- 초기화 ------------------------- */
-function boot(){
+async function boot(){
   renderCardTabs();
+  togglePresetBox();
+  await refreshLists();       // 초기 카드: hanlove
+  state.list = state.lists[state.card][0] || 'default';
   renderListTabs();
   syncPath();
   loadCurrent();
 }
+$('#refreshListsBtn').onclick = refreshLists;
 boot();
 </script>
