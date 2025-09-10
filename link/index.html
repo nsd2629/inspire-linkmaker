@@ -13,10 +13,11 @@
 import { qs } from '../lib/utils.js';
 
 const params = new URLSearchParams(location.search);
-const card   = qs('card','hanlove');
+const card = qs('card','hanlove');
 const listParam = qs('list', null);
-// healing은 기본을 bible30으로
-const list   = (card==='healing')
+
+// healing 카드일 땐 list가 비었거나 default면 bible30 사용
+const list = (card === 'healing')
   ? (listParam && listParam !== 'default' ? listParam : 'bible30')
   : (listParam || 'default');
 
