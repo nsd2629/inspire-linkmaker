@@ -1,18 +1,376 @@
 <!doctype html><meta charset="utf-8"/>
-<title>Data Viewer</title>
-<style>body{font-family:system-ui;margin:0;background:#0b1020;color:#fff} .wrap{max-width:980px;margin:24px auto;padding:0 20px} textarea{width:100%;height:520px;background:#121a36;color:#fff;border:1px solid #3a4368;border-radius:12px;padding:12px}</style>
+<title>Data Editor · Link Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  :root{--bg:#0b1020;--card:#121a36;--line:#3a4368;--fg:#fff;--muted:#94a3b8}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--fg)}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 20px}
+  h2{margin:0 0 10px}
+  .tabs{display:flex;gap:8px;margin:8px 0 16px}
+  .tab{background:var(--card);border:1px solid var(--line);padding:8px 12px;border-radius:12px;cursor:pointer}
+  .tab.active{outline:2px solid #5b77ff}
+  .pill{font-size:12px;color:var(--muted)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+  input,select,button,textarea{border-radius:12px;border:1px solid var(--line);background:#0f1530;color:#fff}
+  input,select,textarea{padding:10px}
+  button{padding:10px 14px;background:#5b77ff;border:0;cursor:pointer}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+  th{font-weight:600;text-align:left}
+  td input,td select,td textarea{width:100%}
+  .right{margin-left:auto}
+  .muted{color:var(--muted);font-size:12px}
+  .danger{background:#ff5b5b}
+  .ghost{background:transparent;border:1px dashed var(--line)}
+  .small{font-size:12px;padding:6px 8px}
+  .foot{display:flex;gap:8px;align-items:center;margin-top:12px}
+  .status{padding:6px 10px;border-radius:10px;background:#0f1530;border:1px solid var(--line)}
+  .grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+</style>
+
 <div class="wrap">
-  <h2>저장소 뷰어</h2>
-  <p>경로 입력: <code>/data/&lt;card&gt;/&lt;list&gt;.json</code></p>
-  <input id="path" style="width:100%;padding:10px;border-radius:12px;border:1px solid #3a4368;background:#121a36;color:#fff" value="/data/hanlove/default.json"/>
-  <button id="load">불러오기</button>
-  <textarea id="out" readonly></textarea>
+  <h2>저장소 편집기 <span class="pill">/data/&lt;card&gt;/&lt;list&gt;.json</span></h2>
+
+  <!-- 1) 카드 탭 -->
+  <div class="tabs" id="cardTabs">
+    <div class="tab active" data-card="hanlove">한글사랑</div>
+    <div class="tab" data-card="healing">힐링메세지</div>
+  </div>
+
+  <!-- 2) 그룹(리스트) 탭 -->
+  <div class="card">
+    <div class="grid">
+      <div><b>그룹(리스트)</b> <span class="muted">엑셀 시트처럼 탭 전환</span></div>
+      <div class="right">
+        <input id="newListName" placeholder="새 그룹 이름(예: default, bible30, poem)"/>
+        <button class="small" id="addListBtn">+ 그룹 추가</button>
+      </div>
+    </div>
+    <div class="tabs" id="listTabs">
+      <!-- 동적 생성 -->
+    </div>
+    <div class="muted">※ v0은 미리 이름을 입력해 만들고 저장(다운로드/커밋)하면 파일이 생성됩니다.</div>
+  </div>
+
+  <!-- 3) 에디터 헤더 -->
+  <div class="row">
+    <div class="status" id="pathBadge">/data/hanlove/default.json</div>
+    <button class="ghost small" id="reloadBtn">불러오기</button>
+    <span class="muted">불러오기 실패 시 기본 스켈레톤으로 시작</span>
+  </div>
+
+  <!-- 4) 표 에디터 -->
+  <div class="card">
+    <div id="editorHeader"></div>
+    <table id="tbl">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+    <div class="foot">
+      <button id="addRowBtn">+ 항목 추가</button>
+      <div class="right"></div>
+      <button id="downloadBtn">JSON 다운로드</button>
+      <button id="commitBtn" class="ghost">GitHub 커밋(선택)</button>
+    </div>
+  </div>
+
+  <!-- 5) GitHub 커밋(옵션) -->
+  <div class="card" id="ghBox" style="display:none">
+    <div class="grid">
+      <div><b>GitHub 저장 (선택)</b><div class="muted">토큰은 브라우저 메모리에만 임시 사용·저장 안 함</div></div>
+    </div>
+    <div class="row">
+      <input id="ghOwner" placeholder="owner" value="Inspire-wood">
+      <input id="ghRepo"  placeholder="repo"  value="inspire-linkmaker">
+      <input id="ghBranch" placeholder="branch" value="main">
+      <input id="ghToken" placeholder="Personal Access Token" type="password">
+    </div>
+    <div class="row">
+      <button id="doCommitBtn">이 파일 커밋</button>
+      <span class="muted">→ 새 파일 생성 또는 업데이트</span>
+    </div>
+    <div class="row"><div id="ghMsg" class="muted"></div></div>
+  </div>
+
 </div>
+
 <script>
-async function load(){
-  const p = document.getElementById('path').value.trim();
-  try{ const r = await fetch(p,{cache:'no-store'}); const j = await r.json(); document.getElementById('out').value = JSON.stringify(j,null,2); }
-  catch(e){ document.getElementById('out').value = '로드 실패: '+e; }
+/* ------------------------- 상태 ------------------------- */
+const state = {
+  card: 'hanlove',
+  lists: { hanlove: ['default'], healing: ['bible30'] },
+  list: 'default',
+  data: { meta:{}, items:[] }
+};
+
+const $ = (q)=>document.querySelector(q);
+const $$ = (q)=>document.querySelectorAll(q);
+
+/* ------------------------- 로딩/저장 도우미 ------------------------- */
+function pathFor(card=listState().card, list=listState().list){
+  return `/data/${card}/${list}.json`;
 }
- document.getElementById('load').onclick = load; load();
+function listState(){ return { card: state.card, list: state.list }; }
+
+async function fetchJSON(p){
+  try{
+    const r = await fetch(p, {cache:'no-store'});
+    if(!r.ok) throw new Error('404');
+    return await r.json();
+  }catch(e){
+    return null;
+  }
+}
+function download(filename, text){
+  const blob = new Blob([text], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ------------------------- 로마나이즈 (간단 제안) ------------------------- */
+/* 한국어 → 영문 발음 자동 제안(간단 규칙). 필요 시 직접 수정 가능. */
+function romanizeKo(str=''){
+  // 한글 음절 분해 기반 아주 단순한 표기(발음 가이드 용도)
+  const CHO = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
+  const JUNG = {
+    0:"a",1:"ae",2:"ya",3:"yae",4:"eo",5:"e",6:"yeo",7:"ye",8:"o",9:"wa",10:"wae",11:"oe",12:"yo",
+    13:"u",14:"wo",15:"we",16:"wi",17:"yu",18:"eu",19:"ui",20:"i"
+  };
+  // 사용자 예시에 맞춰 ㅙ를 we로 간소화
+  JUNG[10] = "we";
+  const JONG = ["","k","k","ks","n","nj","nh","t","l","lk","lm","lb","ls","lt","lp","lt","m","p","ps","t","t","ng","t","t","k","t","p","t"];
+  const base = 0xAC00;
+  let out = [];
+  for (const ch of str){
+    const code = ch.charCodeAt(0);
+    if (code < 0xAC00 || code > 0xD7A3){ out.push(ch); continue; }
+    const idx = code - base;
+    const cho = Math.floor(idx / 588);
+    const jung = Math.floor((idx % 588) / 28);
+    const jong = idx % 28;
+    const lead = CHO[cho] || "";
+    const mid  = JUNG[jung] || "";
+    const tail = JONG[jong] || "";
+    out.push(lead + mid + tail);
+  }
+  // 하이픈으로 시각 분리
+  return out.join('-').replace(/-+/g,'-');
+}
+
+/* ------------------------- UI 만들기 ------------------------- */
+function renderCardTabs(){
+  $('#cardTabs').innerHTML = `
+    <div class="tab ${state.card==='hanlove'?'active':''}" data-card="hanlove">한글사랑</div>
+    <div class="tab ${state.card==='healing'?'active':''}" data-card="healing">힐링메세지</div>
+  `;
+  $$('#cardTabs .tab').forEach(el=>{
+    el.onclick = ()=>{ state.card = el.dataset.card; state.list = state.lists[state.card][0] || 'default'; syncPath(); renderListTabs(); loadCurrent(); };
+  });
+}
+
+function renderListTabs(){
+  const lists = state.lists[state.card] || [];
+  $('#listTabs').innerHTML = lists.map(x=>`<div class="tab ${state.list===x?'active':''}" data-list="${x}">${x}</div>`).join('');
+  $$('#listTabs .tab').forEach(el=>{
+    el.onclick = ()=>{ state.list = el.dataset.list; syncPath(); loadCurrent(); };
+  });
+}
+
+function syncPath(){ $('#pathBadge').textContent = pathFor(); }
+
+/* 테이블 헤더 */
+function renderHeader(){
+  const thead = $('#tbl thead');
+  if(state.card==='hanlove'){
+    thead.innerHTML = `
+      <tr>
+        <th style="width:90px">ID</th>
+        <th>한글</th>
+        <th>한국어 발음(영문)</th>
+        <th>영어 의미</th>
+        <th style="width:70px">가중</th>
+        <th style="width:100px">상태</th>
+        <th style="width:60px"></th>
+      </tr>`;
+    $('#editorHeader').innerHTML = `<b>한글사랑</b> · <span class="muted">한글/발음/영어의미 필드 제공 (발음은 자동 제안 후 수정 가능)</span>`;
+  }else{
+    thead.innerHTML = `
+      <tr>
+        <th style="width:90px">ID</th>
+        <th>텍스트</th>
+        <th>태그(쉼표)</th>
+        <th style="width:70px">가중</th>
+        <th style="width:100px">상태</th>
+        <th style="width:60px"></th>
+      </tr>`;
+    $('#editorHeader').innerHTML = `<b>힐링메세지</b> · <span class="muted">그룹(리스트)별로 관리 · A/B/C 처럼 원하는 이름으로 추가</span>`;
+  }
+}
+
+/* 테이블 바디 */
+function renderRows(){
+  const tb = $('#tbl tbody'); tb.innerHTML = '';
+  const items = state.data.items || [];
+  items.forEach((it, idx)=>{
+    const tr = document.createElement('tr');
+    const common = `
+      <td><input value="${it.id||''}" data-k="id"></td>
+    `;
+    if(state.card==='hanlove'){
+      tr.innerHTML = common + `
+        <td><input value="${it.text||''}" data-k="text" placeholder="예) 괜찮아"></td>
+        <td><input value="${it.pron||''}" data-k="pron" placeholder="예) gwen-cha-na"></td>
+        <td><input value="${it.en||''}" data-k="en" placeholder="예) It's Okay"></td>
+        <td><input value="${it.weight||1}" data-k="weight" type="number" min="1"></td>
+        <td>
+          <select data-k="status">
+            <option ${it.status==='APPROVED'?'selected':''}>APPROVED</option>
+            <option ${it.status==='DRAFT'?'selected':''}>DRAFT</option>
+          </select>
+        </td>
+        <td><button class="danger small" data-del="${idx}">삭제</button></td>`;
+    }else{
+      tr.innerHTML = common + `
+        <td><textarea rows="2" data-k="text" placeholder="예) 당신의 오늘이 따뜻하길">${it.text||''}</textarea></td>
+        <td><input value="${(it.tags||[]).join(',')}" data-k="tags" placeholder="예) 위로,성경"></td>
+        <td><input value="${it.weight||1}" data-k="weight" type="number" min="1"></td>
+        <td>
+          <select data-k="status">
+            <option ${it.status==='APPROVED'?'selected':''}>APPROVED</option>
+            <option ${it.status==='DRAFT'?'selected':''}>DRAFT</option>
+          </select>
+        </td>
+        <td><button class="danger small" data-del="${idx}">삭제</button></td>`;
+    }
+    tb.appendChild(tr);
+  });
+
+  // 이벤트: 값 바뀌면 state 반영
+  tb.querySelectorAll('input,select,textarea').forEach(el=>{
+    el.oninput = ()=>{
+      const tr = el.closest('tr');
+      const idx = Array.from(tb.children).indexOf(tr);
+      const k = el.dataset.k;
+      let v = el.value;
+      if(k==='weight') v = Number(v)||1;
+      if(k==='tags') v = v.split(',').map(s=>s.trim()).filter(Boolean);
+      state.data.items[idx][k] = v;
+    };
+  });
+  // 삭제
+  tb.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{ const i = Number(btn.dataset.del); state.data.items.splice(i,1); renderRows(); };
+  });
+}
+
+/* ------------------------- 스켈레톤/유틸 ------------------------- */
+function skeleton(card){
+  if(card==='hanlove'){
+    return {
+      meta:{ list: state.list, lang:'ko', credit:'폰트: 무료 상업용' },
+      items:[ {id: newId('HL'), text:'', pron:'', en:'', weight:1, status:'DRAFT'} ]
+    };
+  }
+  return {
+    meta:{ list: state.list, lang:'ko', credit:'자료 출처 표기' },
+    items:[ {id: newId('HLG'), text:'', tags:[], weight:1, status:'DRAFT'} ]
+  };
+}
+function newId(prefix){ const n = Math.floor(Math.random()*900+100); return `${prefix}-${n}`; }
+
+/* 행 추가 */
+function addRow(){
+  if(state.card==='hanlove'){
+    state.data.items.push({id:newId('HL'), text:'', pron:'', en:'', weight:1, status:'DRAFT'});
+  }else{
+    state.data.items.push({id:newId('HLG'), text:'', tags:[], weight:1, status:'DRAFT'});
+  }
+  renderRows();
+}
+
+/* 한글 입력 시 발음 자동 제안 */
+document.addEventListener('input',(e)=>{
+  const el=e.target;
+  if(state.card!=='hanlove') return;
+  if(el && el.dataset && el.dataset.k==='text'){
+    const tr = el.closest('tr');
+    const idx = Array.from($('#tbl tbody').children).indexOf(tr);
+    const pron = romanizeKo(el.value);
+    if(!state.data.items[idx].pron || state.data.items[idx].pron.trim()===''){
+      state.data.items[idx].pron = pron;
+      tr.querySelector('input[data-k="pron"]').value = pron;
+    }
+  }
+});
+
+/* ------------------------- 불러오기/저장 ------------------------- */
+async function loadCurrent(){
+  renderHeader();
+  const p = pathFor();
+  const j = await fetchJSON(p);
+  state.data = j || skeleton(state.card);
+  // 파일이 없을 때도 meta.list를 현재 리스트로 맞춤
+  state.data.meta = state.data.meta || {};
+  state.data.meta.list = state.list;
+  renderRows();
+}
+
+$('#addRowBtn').onclick = addRow;
+$('#reloadBtn').onclick = loadCurrent;
+$('#downloadBtn').onclick = ()=>{
+  const fn = pathFor().replace('/data/','').replace(/\//g,'__'); // 예: hanlove__default.json
+  download(fn, JSON.stringify(state.data,null,2));
+};
+$('#commitBtn').onclick = ()=>{ $('#ghBox').style.display='block'; };
+$('#doCommitBtn').onclick = doCommit;
+
+async function doCommit(){
+  const owner = $('#ghOwner').value.trim();
+  const repo  = $('#ghRepo').value.trim();
+  const branch= $('#ghBranch').value.trim();
+  const token = $('#ghToken').value.trim();
+  const path  = pathFor().replace(/^\//,''); // data/...
+  const msgEl = $('#ghMsg'); msgEl.textContent='커밋 중…';
+
+  const headers = { 'Authorization': `token ${token}`, 'Accept':'application/vnd.github+json' };
+
+  // sha 조회(있으면 update, 없으면 create)
+  let sha = null;
+  const getUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${branch}`;
+  const getRes = await fetch(getUrl, {headers});
+  if(getRes.status===200){ const j=await getRes.json(); sha=j.sha; }
+
+  const putUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+  const body = {
+    message: `chore: update ${path}`,
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(state.data,null,2)))),
+    branch
+  };
+  if(sha) body.sha = sha;
+
+  const putRes = await fetch(putUrl, {method:'PUT', headers, body: JSON.stringify(body)});
+  if(putRes.status>=200 && putRes.status<300){ msgEl.textContent='성공! 레포에 커밋되었습니다.'; }
+  else{ const t = await putRes.text(); msgEl.textContent='실패: '+t; }
+}
+
+/* ------------------------- 그룹 추가/탭 전환 ------------------------- */
+$('#addListBtn').onclick = ()=>{
+  const name = $('#newListName').value.trim();
+  if(!name) return alert('그룹 이름을 입력하세요. 예) default, bible30, poem');
+  if(!state.lists[state.card]) state.lists[state.card] = [];
+  if(!state.lists[state.card].includes(name)) state.lists[state.card].push(name);
+  state.list = name; $('#newListName').value='';
+  renderListTabs(); syncPath(); state.data = skeleton(state.card); renderHeader(); renderRows();
+};
+
+/* ------------------------- 초기화 ------------------------- */
+function boot(){
+  renderCardTabs();
+  renderListTabs();
+  syncPath();
+  loadCurrent();
+}
+boot();
 </script>
