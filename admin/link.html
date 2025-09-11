@@ -4,12 +4,12 @@
 <style>
   :root{--bg:#0b1020;--panel:#121a36;--line:#3a4368;--ink:#fff;--muted:#94a3b8;--accent:#5b77ff}
   body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
-  .wrap{max-width:1140px;margin:24px auto;padding:0 20px}
-  .flex{display:grid;grid-template-columns:360px 1fr;gap:16px}
+  .wrap{max-width:1080px;margin:24px auto;padding:0 20px}
+  .flex{display:grid;grid-template-columns:320px 1fr;gap:16px}
   label{display:block;margin:10px 0 4px;font-size:12px;opacity:.85}
   input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
   button{padding:10px 14px;border-radius:12px;border:0;background:var(--accent);color:#fff;cursor:pointer}
-  iframe{width:100%;height:560px;background:#0f1530;border:1px solid var(--line);border-radius:12px}
+  iframe{width:100%;height:520px;background:#0f1530;border:1px solid var(--line);border-radius:12px}
   .row{margin:10px 0}.inline{display:flex;gap:8px;align-items:center}
   .muted{color:var(--muted);font-size:12px}
   .topbar{display:flex;justify-content:flex-start;align-items:center;margin:10px 0 8px}
@@ -21,11 +21,8 @@
   .dropdown{position:absolute;left:0;right:0;top:100%;z-index:30;max-height:260px;overflow:auto;
     background:#0f1530;border:1px solid var(--line);border-radius:10px;margin-top:6px;display:none}
   .dropdown .item{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;gap:8px;align-items:center}
-  .dropdown .item:hover{background:#162048}
-  .dropdown .item.active{background:#162048}
+  .dropdown .item:hover,.dropdown .item.active{background:#162048}
   .badge{padding:2px 6px;border-radius:999px;background:#1f2a54;border:1px solid var(--line);font-size:11px;color:#cbd5e1}
-  .card{border:1px dashed var(--line);border-radius:12px;padding:12px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 
 <div class="wrap">
@@ -100,39 +97,6 @@
         <button id="copyShort">단축URL 복사</button>
         <button id="dlShort">단축URL 다운로드(.txt)</button>
       </div>
-
-      <div class="card" style="margin-top:14px">
-        <div class="grid2">
-          <div>
-            <label>GitHub Owner</label>
-            <input id="gh_owner" placeholder="예: inspire-wood"/>
-          </div>
-          <div>
-            <label>Repo</label>
-            <input id="gh_repo" placeholder="예: inspire-linkmaker"/>
-          </div>
-        </div>
-        <div class="grid2">
-          <div>
-            <label>Branch</label>
-            <input id="gh_branch" value="main"/>
-          </div>
-          <div>
-            <label>Path to slugs.json</label>
-            <input id="gh_path" value="data/slugs.json"/>
-          </div>
-        </div>
-        <label>GitHub Token (repo:contents)</label>
-        <input id="gh_token" type="password" placeholder="GitHub Personal Access Token (fine-grained 권장)"/>
-        <div class="row inline">
-          <button id="btnPublish">슬러그 발행(GitHub 저장)</button>
-          <label class="inline" style="gap:6px">
-            <input type="checkbox" id="rememberRepo"/> owner/repo/branch 기억
-          </label>
-        </div>
-        <div id="pubStatus" class="muted"></div>
-      </div>
-
     </div>
 
     <div>
@@ -144,7 +108,7 @@
 <script>
 async function loadConfig(){ const r=await fetch('/admin/config.json',{cache:'no-store'}); return r.json(); }
 function buildURL(base){
-  const p = new URL(base.replace(/\\/$/,'') + '/link');
+  const p = new URL(base.replace(/\/$/,'') + '/link');
   const card = document.getElementById('card').value;
   const list = (document.getElementById('list').value || 'default').trim() || 'default';
   const mode = document.getElementById('mode').value;
@@ -168,7 +132,7 @@ function buildURL(base){
   return p.toString();
 }
 
-/* ===== Hanlove 데이터/콤보 ===== */
+// ===== Hanlove 데이터/콤보 =====
 const $ = (q)=>document.querySelector(q);
 const elCard=$('#card'), elList=$('#list'), elMode=$('#mode'), elId=$('#itemId');
 const block=$('#hanloveBlock'), search=$('#hanloveSearch'), box=$('#hanloveDropdown');
@@ -195,6 +159,8 @@ async function loadHanloveData(listName){
   return { listKey:list, items: items.map(x=>({id:x.id||'',text:(x.text||'').trim(),en:(x.en||'').trim(),pron:(x.pron||'')})) };
 }
 function showHanlove(on){ block.style.display=on?'block':'none'; if(!on) box.style.display='none' }
+
+// 키보드 내비
 let selIndex=-1;
 function setActiveByIndex(i){
   const items=[...box.querySelectorAll('.item')];
@@ -237,7 +203,7 @@ async function refreshHanloveBlock(){
   renderDropdown(HANLOVE_CACHE.items,'');
 }
 
-/* ===== 부트스트랩 & 자동 갱신 ===== */
+// ===== 부트스트랩
 function wireAutoRebuild(rebuild){
   const ids=['env','card','list','mode','itemId','showCredit','utm','v','promo'];
   ids.forEach(id=>{
@@ -266,10 +232,9 @@ async function boot(){
   // Hanlove 이벤트
   elCard.addEventListener('change', refreshHanloveBlock);
   elList.addEventListener('change', refreshHanloveBlock);
-  const block = document.getElementById('hanloveBlock'), box=document.getElementById('hanloveDropdown'), search=document.getElementById('hanloveSearch');
-  document.addEventListener('click', (e)=>{ if(!block.contains(e.target)) box.style.display='none'; });
   search.addEventListener('input', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
   search.addEventListener('focus', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
+  document.addEventListener('click', (e)=>{ if(!block.contains(e.target)) box.style.display='none'; });
   search.addEventListener('keydown', (e)=>{
     const items=[...box.querySelectorAll('.item')];
     if(e.key==='ArrowDown' && items.length){ e.preventDefault(); selIndex=(selIndex+1)%items.length; setActiveByIndex(selIndex); }
@@ -278,13 +243,13 @@ async function boot(){
     else if(e.key==='Escape'){ box.style.display='none'; }
   });
 
-  // Short URL 바인딩
-  function fileSafe(name='link'){ return (name||'link').replace(/[\\/:*?"<>|]+/g,'-').replace(/\\s+/g,' ').trim().slice(0,60); }
-  function slugify(s='link'){ return s.toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32)||'link'; }
+  // 단축 URL(문자열만 생성)
+  function fileSafe(name='link'){ return (name||'link').replace(/[\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim().slice(0,60); }
+  function slugify(s='link'){ return s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32)||'link'; }
   const getEnglishMeaning=()=> (document.getElementById('hanloveEn')?.value||'').trim();
 
   function makeShort(){
-    const base=cfg.envs[envSel.value].base.replace(/\\/$/,'');
+    const base=cfg.envs[envSel.value].base.replace(/\/$/,'');
     const slugEl=document.getElementById('slug');
     let slug=(slugEl.value||'').trim();
     if(!slug){ slug=slugify(getEnglishMeaning()||document.getElementById('itemId').value||'link'); slugEl.value=slug; }
@@ -300,72 +265,6 @@ async function boot(){
   document.getElementById('mkShort').onclick=makeShort;
   document.getElementById('copyShort').onclick=async()=>{ const v=document.getElementById('shortUrl').value; if(!v){ alert('먼저 단축 URL을 생성하세요.'); return; } await navigator.clipboard.writeText(v); alert('단축URL 복사됨'); };
   document.getElementById('dlShort').onclick=downloadShortTxt;
-
-  // ===== 슬러그 발행 (GitHub 커밋) =====
-  const $id=(x)=>document.getElementById(x);
-  const saved = JSON.parse(localStorage.getItem('lm_repo')||'{}');
-  if(saved.owner) $id('gh_owner').value=saved.owner;
-  if(saved.repo)  $id('gh_repo').value=saved.repo;
-  if(saved.branch)$id('gh_branch').value=saved.branch;
-
-  async function githubGetJSON({owner,repo,branch,path,token}){
-    const url=`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
-    const res=await fetch(url,{headers:{'Accept':'application/vnd.github+json','Authorization':token?`Bearer ${token}`:''}});
-    if(res.status===404){ return {json:{}, sha:null}; }
-    if(!res.ok){ const t=await res.text(); throw new Error(`GET ${res.status}: ${t}`); }
-    const data=await res.json();
-    const content=atob(data.content.replace(/\\n/g,''));
-    return {json: JSON.parse(content||'{}'), sha:data.sha};
-  }
-  async function githubPutJSON({owner,repo,branch,path,token,json,sha,message}){
-    const url=`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-    const body={ message, branch, content:btoa(unescape(encodeURIComponent(JSON.stringify(json,null,2)))), sha:sha||undefined };
-    const res=await fetch(url,{method:'PUT', headers:{'Accept':'application/vnd.github+json','Authorization':token?`Bearer ${token}`:'', 'Content-Type':'application/json'}, body: JSON.stringify(body)});
-    if(!res.ok){ const t=await res.text(); throw new Error(`PUT ${res.status}: ${t}`); }
-    return await res.json();
-  }
-  function status(msg,type='info'){
-    const el=$id('pubStatus');
-    el.textContent=msg;
-    el.style.color = type==='error' ? '#ff7b7b' : (type==='ok' ? '#9ae6b4' : '#94a3b8');
-  }
-
-  $id('btnPublish').onclick = async ()=>{
-    try{
-      const owner=$id('gh_owner').value.trim();
-      const repo=$id('gh_repo').value.trim();
-      const branch=$id('gh_branch').value.trim()||'main';
-      const path=$id('gh_path').value.trim()||'data/slugs.json';
-      const token=$id('gh_token').value.trim();
-      if(!owner||!repo){ alert('owner/repo를 입력하세요.'); return; }
-      if(!token){ alert('GitHub Token이 필요합니다.'); return; }
-
-      if(!$id('shortUrl').value) document.getElementById('mkShort').click();
-      const short = $id('shortUrl').value.trim();
-      if(!short){ alert('먼저 단축 URL을 생성하세요.'); return; }
-
-      const slug = ($id('slug').value||'').trim();
-      const linkUrl = new URL($id('url').value);
-      const finalPath = linkUrl.pathname + linkUrl.search; // /link?... (호스트 제외)
-
-      status('GitHub에서 slugs.json 불러오는 중…');
-      const {json,sha} = await githubGetJSON({owner,repo,branch,path,token});
-      json[slug] = { path: finalPath, note: getEnglishMeaning() || '', updatedAt: new Date().toISOString() };
-
-      status('슬러그 저장 중(커밋)…');
-      await githubPutJSON({owner,repo,branch,path,token,json,sha,message:`chore(slug): publish ${slug} -> ${finalPath}`});
-
-      if($id('rememberRepo').checked){
-        localStorage.setItem('lm_repo', JSON.stringify({owner,repo,branch}));
-      }
-      status('완료! slugs.json 커밋됨. Pages가 곧 반영합니다.', 'ok');
-      alert('슬러그 발행 완료!\\n➡ ' + short + '\\n(잠시 후 접속 확인하세요)');
-    }catch(err){
-      console.error(err);
-      status('에러: '+ err.message, 'error');
-      alert('발행 실패\\n\\n'+ err.message);
-    }
-  };
 
   await refreshHanloveBlock();
   rebuild();
