@@ -219,4 +219,17 @@ async function boot(){
   rebuild();
 }
 boot();
+  // ① 모든 폼 요소 변경 시 자동 리빌드
+function wireAutoRebuild(rebuild){
+  const ids = ['env','card','list','mode','itemId','showCredit','utm','v','promo'];
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const evt = (el.tagName==='INPUT' && el.type==='text') ? 'input' : 'change';
+    el.addEventListener(evt, rebuild);
+  });
+}
+
+// boot() 안, rebuild 정의된 뒤 바로 아래 한 줄 추가
+wireAutoRebuild(rebuild);
 </script>
