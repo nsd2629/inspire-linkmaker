@@ -1,9 +1,12 @@
-// cards/hanlove/template.js
+// cards/hanlove/template.js  (patched: promo+btn support)
 export async function render({ data, params }) {
   const urlp = new URLSearchParams(params);
   const mode = (urlp.get('mode') || 'shuffle').toLowerCase();
   const fixedId = urlp.get('id') || null;
+
+  // NEW: read promo url & button label from URL params
   const promo = urlp.get('promo') || '/link?card=healing&list=bible30&mode=daily';
+  const btnLabel = urlp.get('btn') || 'Open Healing Message';
 
   // 1) APPROVED만, 가중치 포함 선택
   const items = (data.items || []).filter(x => (x.status || 'APPROVED') === 'APPROVED' && x.text);
@@ -41,12 +44,17 @@ export async function render({ data, params }) {
 
   // 버튼 영역
   const btnRow = el('div', 'hl-btnrow');
+
   const ttsBtn = el('button', 'hl-btn', 'Play TTS (KO)');
   ttsBtn.onclick = () => speakKorean(ko);
-  const promoBtn = el('a', 'hl-btn ghost', 'Open Healing Message');
+
+  // UPDATED: promo button text & link come from params
+  const promoBtn = el('a', 'hl-btn ghost', btnLabel);
+  promoBtn.setAttribute('data-role', 'open-healing'); // for external hooks
   promoBtn.href = promoWithUtm(promo, 'qr', 'hanlove', data?.meta?.list || 'default');
   promoBtn.target = '_blank';
   promoBtn.rel = 'noopener';
+
   btnRow.append(ttsBtn, promoBtn);
   card.appendChild(btnRow);
 
