@@ -1,4 +1,50 @@
-body{ background:#fafafa; }
-.hanlove-card{ max-width:720px; margin:24px; padding:40px; background:#fff; color:#111; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,.08) }
-.typo{ font-size:clamp(24px,5vw,44px); text-align:center; line-height:1.4; margin:0 0 10px }
-.credit{ margin-top:10px; text-align:center; opacity:.6; font-size:12px }
+/* cards/hanlove/style.css */
+:root{
+  --bg:#fff4ef;
+  --card:#ffffff;
+  --ink:#0f172a;
+  --muted:#6b7280;
+  --pill:#f1f5f9;
+  --btn:#111827;
+  --btn-ghost:#ffffff;
+  --shadow:0 12px 40px rgba(16,24,40,.12);
+}
+body{background:radial-gradient(1000px 400px at 20% -10%, #ffe5d8 0%, #fff4ef 40%, #fff 100%)}
+.hl-wrap{min-height:100vh;display:grid;place-items:center;padding:28px}
+.hl-card{
+  width:min(720px,92vw);
+  background:var(--card);
+  color:var(--ink);
+  border-radius:28px;
+  box-shadow:var(--shadow);
+  padding:28px 22px 26px;
+}
+
+.hl-pill{
+  display:inline-block;
+  border-radius:999px;
+  padding:10px 14px;
+  background:var(--pill);
+  color:#334155;
+  font-weight:600;
+  margin:6px 6px 12px;
+}
+
+.hl-en{font-size:44px;line-height:1.1;margin:10px 10px 0 10px;font-weight:800;letter-spacing:-.01em}
+@media (max-width:420px){.hl-en{font-size:36px}}
+.hl-ko{font-size:64px;line-height:1.05;margin:8px 10px;font-weight:900;letter-spacing:-.02em}
+@media (max-width:420px){.hl-ko{font-size:48px}}
+.hl-pron{font-size:22px;color:#374151;margin:2px 12px 10px}
+.hl-desc{font-size:18px;color:#4b5563;margin:6px 12px 18px}
+
+.hl-btnrow{display:flex;gap:12px;flex-wrap:wrap;margin:14px 10px 0}
+.hl-btn{
+  appearance:none;border:0;cursor:pointer;
+  padding:14px 18px;border-radius:16px;font-weight:700;
+  background:var(--btn); color:white;
+  box-shadow:0 2px 0 rgba(0,0,0,.08);
+}
+.hl-btn.ghost{
+  background:#fff;color:#111827;border:1px solid #e5e7eb;
+}
+.hl-btn:active{transform:translateY(1px)}
