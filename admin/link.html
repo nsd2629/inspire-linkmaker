@@ -3,26 +3,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
   :root{--bg:#0b1020;--panel:#121a36;--line:#3a4368;--ink:#fff;--muted:#94a3b8;--accent:#5b77ff}
+  *{box-sizing:border-box}
   body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
-  .wrap{max-width:1080px;margin:24px auto;padding:0 20px}
-  .flex{display:grid;grid-template-columns:320px 1fr;gap:16px}
-  label{display:block;margin:10px 0 4px;font-size:12px;opacity:.85}
+  .wrap{max-width:1280px;margin:24px auto;padding:0 20px}
+  h2{margin:0 0 12px}
+  /* 전체 2컬럼: 좌(폼) / 우(프리뷰) */
+  .layout{display:grid;grid-template-columns:660px 1fr;gap:18px;align-items:start}
+  /* 좌측 폼 영역은 다시 2컬럼: 기본설정 / hanlove */
+  .form-grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
+  label{display:block;margin:8px 0 4px;font-size:12px;opacity:.85}
   input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
   button{padding:10px 14px;border-radius:12px;border:0;background:var(--accent);color:#fff;cursor:pointer}
-  iframe{width:100%;height:520px;background:#0f1530;border:1px solid var(--line);border-radius:12px}
-  .row{margin:10px 0}.inline{display:flex;gap:8px;align-items:center}
+  .row{margin:10px 0}
+  .inline{display:flex;gap:8px;align-items:center}
   .muted{color:var(--muted);font-size:12px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  /* 상단 공용 바 */
   .topbar{display:flex;justify-content:flex-start;align-items:center;margin:10px 0 8px}
   .topbar a.btn{display:inline-block;padding:8px 12px;border-radius:10px;border:1px solid var(--line);
     background:var(--panel);color:var(--ink);text-decoration:none;font-size:13px}
   .topbar a.btn:hover{background:#152049}
+  /* URL 입력은 단일행 모노스페이스 */
   #url,#shortUrl{font-family:ui-monospace,Menlo,Consolas,"SF Mono",monospace;white-space:nowrap;overflow-x:auto}
+  /* 콤보박스(검색) */
   .combo{position:relative}
   .dropdown{position:absolute;left:0;right:0;top:100%;z-index:30;max-height:260px;overflow:auto;
     background:#0f1530;border:1px solid var(--line);border-radius:10px;margin-top:6px;display:none}
   .dropdown .item{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;gap:8px;align-items:center}
   .dropdown .item:hover,.dropdown .item.active{background:#162048}
   .badge{padding:2px 6px;border-radius:999px;background:#1f2a54;border:1px solid var(--line);font-size:11px;color:#cbd5e1}
+  /* 프리뷰 패널 */
+  .preview{background:#0f1530;border:1px solid var(--line);border-radius:14px;padding:10px}
+  iframe#preview{width:100%;height:560px;border:0;border-radius:10px;background:#0b1020}
+  /* URL/단축URL 섹션은 좌측 그리드 2열 전체 사용 */
+  .col-span-2{grid-column:1 / span 2}
 </style>
 
 <div class="wrap">
@@ -30,76 +44,87 @@
     <a href="/admin/" class="btn">← 운영 대시보드로</a>
   </div>
   <h2>Link Maker</h2>
-  <div class="flex">
-    <div>
-      <label>환경</label>
-      <select id="env"></select>
 
-      <label>card</label>
-      <select id="card">
-        <option value="hanlove">hanlove</option>
-        <option value="healing">healing</option>
-      </select>
+  <div class="layout">
+    <!-- 좌: 폼 -->
+    <div class="panel">
+      <div class="form-grid">
+        <!-- 기본 설정(좌) -->
+        <div>
+          <label>환경</label>
+          <select id="env"></select>
 
-      <label>list</label>
-      <input id="list" placeholder="default / bible30 / custom-..." value="default"/>
+          <label>card</label>
+          <select id="card">
+            <option value="hanlove">hanlove</option>
+            <option value="healing">healing</option>
+          </select>
 
-      <label>mode</label>
-      <select id="mode">
-        <option>daily</option><option>fixed</option><option selected>shuffle</option>
-      </select>
+          <label>list</label>
+          <input id="list" placeholder="default / bible30 / custom-..." value="default"/>
 
-      <label>id (mode=fixed일 때)</label>
-      <input id="itemId" placeholder="HL-002"/>
+          <label>mode</label>
+          <select id="mode">
+            <option>daily</option><option>fixed</option><option selected>shuffle</option>
+          </select>
 
-      <label>옵션</label>
-      <div class="row">
-        <label class="inline"><input type="checkbox" id="showCredit"> showCredit</label>
-        <label class="inline"><input type="checkbox" id="utm" checked> UTM 기본값</label>
-      </div>
+          <label>id (mode=fixed일 때)</label>
+          <input id="itemId" placeholder="HL-002"/>
 
-      <label>버전 v=</label>
-      <input id="v" placeholder="1" value="1"/>
+          <label>옵션</label>
+          <div class="row">
+            <label class="inline"><input type="checkbox" id="showCredit"> showCredit</label>
+            <label class="inline"><input type="checkbox" id="utm" checked> UTM 기본값</label>
+          </div>
 
-      <!-- Hanlove 전용 -->
-      <div id="hanloveBlock" style="display:none; margin-top:14px">
-        <div class="muted" style="margin-bottom:6px">한글사랑 전용 · 저장소 항목 선택 → 발음/영어 자동 입력</div>
+          <label>버전 v=</label>
+          <input id="v" placeholder="1" value="1"/>
 
-        <label>한글 (검색/선택)</label>
-        <div class="combo">
-          <input id="hanloveSearch" placeholder="예) 고마워, 사랑해, 괜찮아 …" autocomplete="off"/>
-          <div id="hanloveDropdown" class="dropdown"></div>
+          <label style="margin-top:10px">홍보 링크(promo, 선택)</label>
+          <input id="promo" placeholder="https://your-landing.example" />
+          <div class="muted">카드의 “Open Healing Message” 버튼이 이 주소로 이동합니다.</div>
         </div>
-        <div id="hanloveCount" class="muted" style="margin:6px 0 10px"></div>
 
-        <label>한국어 발음 (자동)</label>
-        <input id="hanlovePron" placeholder="go-ma-wo" disabled />
+        <!-- hanlove(우) -->
+        <div id="hanloveBlock" style="display:none">
+          <div class="muted" style="margin-bottom:6px">한글사랑 전용 · 저장소 항목 선택 → 발음/영어 자동 입력</div>
 
-        <label>영어의미 (저장소)</label>
-        <input id="hanloveEn" placeholder="It’s okay" disabled />
+          <label>한글 (검색/선택)</label>
+          <div class="combo">
+            <input id="hanloveSearch" placeholder="예) 고마워, 사랑해, 괜찮아 …" autocomplete="off"/>
+            <div id="hanloveDropdown" class="dropdown"></div>
+          </div>
+          <div id="hanloveCount" class="muted" style="margin:6px 0 10px"></div>
 
-        <label style="margin-top:10px">홍보 링크(promo, 선택)</label>
-        <input id="promo" placeholder="https://your-landing.example" />
-        <div class="muted">카드의 “Open Healing Message” 버튼이 이 주소로 이동합니다.</div>
-      </div>
+          <label>한국어 발음 (자동)</label>
+          <input id="hanlovePron" placeholder="go-ma-wo" disabled />
 
-      <div class="row"><button id="build">링크 생성</button></div>
-      <div class="row"><input id="url" readonly></div>
+          <label>영어의미 (저장소)</label>
+          <input id="hanloveEn" placeholder="It’s okay" disabled />
+        </div>
 
-      <label style="margin-top:12px">단축 URL</label>
-      <div class="row" style="display:flex;gap:8px;align-items:center">
-        <input id="slug" placeholder="slug(비우면 자동 생성)" style="max-width:220px"/>
-        <button id="mkShort">단축 URL 생성</button>
-      </div>
-      <div class="row"><input id="shortUrl" readonly placeholder="https://…/s/&lt;slug&gt;"/></div>
-      <div class="row">
-        <button id="copy">URL 복사</button>
-        <button id="copyShort">단축URL 복사</button>
-        <button id="dlShort">단축URL 다운로드(.txt)</button>
+        <!-- URL 섹션(2열 전체) -->
+        <div class="col-span-2">
+          <div class="row"><button id="build">링크 생성</button></div>
+          <div class="row"><input id="url" readonly></div>
+
+          <label style="margin-top:12px">단축 URL</label>
+          <div class="row" style="display:flex;gap:8px;align-items:center">
+            <input id="slug" placeholder="slug(비우면 자동 생성)" style="max-width:220px"/>
+            <button id="mkShort">단축 URL 생성</button>
+          </div>
+          <div class="row"><input id="shortUrl" readonly placeholder="https://…/s/&lt;slug&gt;"/></div>
+          <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="copy">URL 복사</button>
+            <button id="copyShort">단축URL 복사</button>
+            <button id="dlShort">단축URL 다운로드(.txt)</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div>
+    <!-- 우: 프리뷰 -->
+    <div class="preview">
       <iframe id="preview" title="preview"></iframe>
     </div>
   </div>
@@ -249,7 +274,7 @@ async function boot(){
   const getEnglishMeaning=()=> (document.getElementById('hanloveEn')?.value||'').trim();
 
   function makeShort(){
-    const base=cfg.envs[envSel.value].base.replace(/\/$/,'');
+    const base=cfg.envs[envSel.value].base.replace(/\/$/,''); 
     const slugEl=document.getElementById('slug');
     let slug=(slugEl.value||'').trim();
     if(!slug){ slug=slugify(getEnglishMeaning()||document.getElementById('itemId').value||'link'); slugEl.value=slug; }
