@@ -26,8 +26,21 @@
   white-space: nowrap;
   overflow-x: auto;
 }
-</style>
+  /* Topbar */
+.topbar{display:flex;justify-content:flex-start;align-items:center;margin:10px 0 8px}
+.topbar a.btn{display:inline-block;padding:8px 12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);text-decoration:none;font-size:13px}
+.topbar a.btn:hover{background:#152049}
 
+/* 긴 URL 가독성 */
+#url,#shortUrl{
+  font-family: ui-monospace, Menlo, Consolas, "SF Mono", monospace;
+  white-space: nowrap; overflow-x: auto;
+}
+</style>
+<div class="topbar">
+  <a href="/admin/" class="btn">← 운영 대시보드로</a>
+</div>
 <div class="wrap">
   <h2>Link Maker</h2>
   <div class="flex">
@@ -89,9 +102,20 @@
       <!-- ─────────────────────── -->
 
       <div class="row"><button id="build">링크 생성</button></div>
-      <div class="row"><input id="url" readonly></div>
-      <div class="row"><button id="copy">URL 복사</button> <button id="makeQR">QR 생성</button></div>
-      <div id="qrcode" class="qr"></div>
+<div class="row"><input id="url" readonly></div>
+
+<label style="margin-top:12px">단축 URL</label>
+<div class="row" style="display:flex;gap:8px;align-items:center">
+  <input id="slug" placeholder="slug(비우면 자동 생성)" style="max-width:220px"/>
+  <button id="mkShort">단축 URL 생성</button>
+</div>
+<div class="row"><input id="shortUrl" readonly placeholder="https://…/s/&lt;slug&gt;"/></div>
+<div class="row">
+  <button id="copy">URL 복사</button>
+  <button id="copyShort">단축URL 복사</button>
+  <button id="dlShort">단축URL 다운로드(.txt)</button>
+</div>
+<!-- QR 관련 요소는 삭제 -->
     </div>
 
     <div>
@@ -226,6 +250,59 @@ async function boot(){
   };
   document.getElementById('build').onclick=rebuild;
   document.getElementById('copy').onclick=async()=>{ await navigator.clipboard.writeText(document.getElementById('url').value); alert('복사됨'); };
+  // 파일명/슬러그 유틸
+function fileSafe(name='link'){
+  return (name||'link').replace(/[\\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim().slice(0,60);
+}
+function slugify(s='link'){
+  return s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+           .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32) || 'link';
+}
+const getEnglishMeaning = ()=> (document.getElementById('hanloveEn')?.value || '').trim();
+
+// 단축 URL 만들기/표시
+function makeShort(){
+  const base = cfg.envs[envSel.value].base.replace(/\/$/,'');
+  const slugEl = document.getElementById('slug');
+  let slug = (slugEl.value || '').trim();
+  if(!slug){
+    slug = slugify(getEnglishMeaning() || document.getElementById('itemId').value || 'link');
+    slugEl.value = slug;
+  }
+  document.getElementById('shortUrl').value = `${base}/s/${slug}`;
+}
+// 단축 URL 다운로드(영어의미.txt)
+function downloadShortTxt(){
+  const short = document.getElementById('shortUrl').value.trim();
+  if(!short){ alert('먼저 단축 URL을 생성하세요.'); return; }
+  const fname = fileSafe(getEnglishMeaning() || 'link') + '.txt';
+  const blob = new Blob([short], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1200);
+}
+
+// 이벤트 바인딩
+document.getElementById('mkShort').onclick   = makeShort;
+document.getElementById('copyShort').onclick = async()=>{
+  const v = document.getElementById('shortUrl').value;
+  if(!v){ alert('먼저 단축 URL을 생성하세요.'); return; }
+  await navigator.clipboard.writeText(v); alert('단축URL 복사됨');
+};
+document.getElementById('dlShort').onclick   = downloadShortTxt;
+
+// (선택) 한글사랑 항목 선택 시 slug 자동 제안
+if (typeof applySelection === 'function'){
+  const _orig = applySelection;
+  window.applySelection = function(it){
+    _orig(it);
+    const sEl = document.getElementById('slug');
+    if(sEl && !(sEl.value||'').trim()){
+      sEl.value = slugify(getEnglishMeaning() || it?.id || 'link');
+    }
+  };
+}
   document.getElementById('makeQR').onclick=()=>{
     const url=document.getElementById('url').value;
     const img=new Image();
