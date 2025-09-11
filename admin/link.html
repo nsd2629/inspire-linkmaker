@@ -18,7 +18,14 @@
     background:#0f1530;border:1px solid var(--line);border-radius:10px;margin-top:6px;display:none}
   .dropdown .item{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;gap:8px;align-items:center}
   .dropdown .item:hover{background:#162048}
+  /* ▼추가: 키보드로 고른 항목 스타일 */
+  .dropdown .item.active{ background:#162048; }
   .badge{padding:2px 6px;border-radius:999px;background:#1f2a54;border:1px solid var(--line);font-size:11px;color:#cbd5e1}
+#url{
+  font-family: ui-monospace, Menlo, Consolas, "SF Mono", monospace;
+  white-space: nowrap;
+  overflow-x: auto;
+}
 </style>
 
 <div class="wrap">
@@ -126,7 +133,13 @@ const $ = (q)=>document.querySelector(q);
 const elCard=$('#card'), elList=$('#list'), elMode=$('#mode'), elId=$('#itemId');
 const block=$('#hanloveBlock'), search=$('#hanloveSearch'), box=$('#hanloveDropdown');
 const inPron=$('#hanlovePron'), inEn=$('#hanloveEn'), countEl=$('#hanloveCount');
-
+// ▼추가: 드롭다운 선택 인덱스 & 표시 유틸
+let selIndex = -1;
+function setActiveByIndex(i){
+  const items = [...box.querySelectorAll('.item')];
+  items.forEach((n,idx)=> n.classList.toggle('active', idx===i));
+  if (i>=0 && items[i]) items[i].scrollIntoView({block:'nearest'});
+}
 let HANLOVE_CACHE={ listKey:null, items:[] }; // {id,text,en,pron?}
 
 function romanizeKo(str=''){
@@ -163,6 +176,19 @@ function renderDropdown(items, keyword=''){
     row.onclick=()=>applySelection(it);
     box.appendChild(row);
   });
+  // ▼추가: 새로 렌더할 때 선택 리셋
+selIndex = -1;
+
+// ▼추가: 마우스 올리면 키보드 선택도 동기화
+box.querySelectorAll('.item').forEach((row, idx)=>{
+  row.addEventListener('mouseenter', ()=>{
+    selIndex = idx;
+    setActiveByIndex(selIndex);
+  });
+});
+
+countEl.textContent = `총 ${items.length}개 · 필터 ${filtered.length}개`;
+box.style.display = filtered.length ? 'block' : 'none';
   countEl.textContent=`총 ${items.length}개 · 필터 ${filtered.length}개`;
   box.style.display=filtered.length?'block':'none';
 }
@@ -212,6 +238,26 @@ async function boot(){
   elList.addEventListener('change', refreshHanloveBlock);
   search.addEventListener('input', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
   search.addEventListener('focus', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
+  // ▼추가: Enter/↑/↓/Esc 키 처리
+search.addEventListener('keydown', (e)=>{
+  const items = [...box.querySelectorAll('.item')];
+  if (e.key === 'ArrowDown' && items.length){
+    e.preventDefault();
+    selIndex = (selIndex + 1) % items.length;
+    setActiveByIndex(selIndex);
+  } else if (e.key === 'ArrowUp' && items.length){
+    e.preventDefault();
+    selIndex = (selIndex <= 0 ? items.length : selIndex) - 1;
+    setActiveByIndex(selIndex);
+  } else if (e.key === 'Enter'){
+    e.preventDefault();
+    if (!items.length) return;
+    if (selIndex < 0) selIndex = 0;     // a) Enter → 첫 항목 선택
+    items[selIndex].click();            // applySelection 호출됨
+  } else if (e.key === 'Escape'){
+    box.style.display = 'none';
+  }
+});
   document.addEventListener('click', (e)=>{ if(!block.contains(e.target)) box.style.display='none'; });
 
   // 초기 표시
