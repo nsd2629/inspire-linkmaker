@@ -9,13 +9,15 @@
       "id": "HL-001",
       "text": "고마워",
       "weight": 2,
-      "status": "APPROVED"
+      "status": "APPROVED",
+      "en": "It's Okay"
     },
     {
       "id": "HL-002",
       "text": "사랑해",
       "weight": 1,
-      "status": "APPROVED"
+      "status": "APPROVED",
+      "en": "I LOVE YOU"
     },
     {
       "id": "HL-003",
