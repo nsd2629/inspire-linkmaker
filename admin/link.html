@@ -1,308 +1,253 @@
-<!doctype html><meta charset="utf-8"/>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Link Maker</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="color-scheme" content="dark light">
 <style>
-  :root{--bg:#0b1020;--panel:#121a36;--line:#3a4368;--ink:#fff;--muted:#94a3b8;--accent:#5b77ff}
+  :root{
+    --bg:#0d1117; --panel:#0f1624; --panel2:#0c1320; --fg:#e6edf3; --muted:#95a1b2; --accent:#7aa2ff; --line:#1e2a3a;
+    --btn:#1f6feb; --btn2:#263241;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f8fb; --panel:#fff; --panel2:#f4f7fb; --fg:#0c1220; --muted:#5b6472; --accent:#335fff; --line:#e7edf5; --btn:#3556ff; --btn2:#eef2f9;}
+  }
   *{box-sizing:border-box}
-  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
-  .wrap{max-width:1280px;margin:24px auto;padding:0 20px}
-  h2{margin:0 0 12px}
-  .layout{display:grid;grid-template-columns:660px 1fr;gap:18px;align-items:start}
-  .form-grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
-  label{display:block;margin:8px 0 4px;font-size:12px;opacity:.85}
-  input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
-  button{padding:10px 14px;border-radius:12px;border:0;background:var(--accent);color:#fff;cursor:pointer}
-  .row{margin:10px 0}
-  .inline{display:flex;gap:8px;align-items:center}
-  .muted{color:var(--muted);font-size:12px}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-  .topbar{display:flex;justify-content:flex-start;align-items:center;margin:10px 0 8px}
-  .topbar a.btn{display:inline-block;padding:8px 12px;border-radius:10px;border:1px solid var(--line);
-    background:var(--panel);color:var(--ink);text-decoration:none;font-size:13px}
-  .topbar a.btn:hover{background:#152049}
-  #url,#shortUrl{font-family:ui-monospace,Menlo,Consolas,"SF Mono",monospace;white-space:nowrap;overflow-x:auto}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+  h1{font-size:20px;margin:18px 0 14px 0}
+  .container{display:grid;grid-template-columns: minmax(360px,520px) 1fr; gap:18px; padding:18px}
+  .panel{background:linear-gradient(180deg, var(--panel), var(--panel2)); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  label{display:block;color:var(--muted);margin:12px 0 6px}
+  input,select,textarea{width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:#0a1220; color:var(--fg); outline:none}
+  select{appearance:none; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2395a1b2"><path d="M4 6l4 4 4-4"/></svg>'); background-repeat:no-repeat; background-position: calc(100% - 10px) center}
+  input::placeholder{color:#6f7a8a}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; border:1px solid var(--line); background:var(--btn2); color:var(--fg); cursor:pointer; user-select:none}
+  .btn.primary{ background:var(--btn); border-color:#21408f }
+  .muted{color:var(--muted)}
+  .flex{display:flex; gap:10px; align-items:center}
+  .right{display:flex; justify-content:flex-end}
+  .badge{display:inline-block; padding:3px 8px; border-radius:999px; background:#1b2840; color:#c8d4ea; font-size:12px}
+  .dropdown{position:absolute; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:6px; width:100%; max-height:240px; overflow:auto; display:none; z-index:20}
+  .dropdown .item{padding:8px 10px;border-radius:10px;display:flex;gap:8px;align-items:center;cursor:pointer}
+  .dropdown .item:hover{background:rgba(125,150,255,.1)}
   .combo{position:relative}
-  .dropdown{position:absolute;left:0;right:0;top:100%;z-index:30;max-height:260px;overflow:auto;
-    background:#0f1530;border:1px solid var(--line);border-radius:10px;margin-top:6px;display:none}
-  .dropdown .item{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;gap:8px;align-items:center}
-  .dropdown .item:hover,.dropdown .item.active{background:#162048}
-  .badge{padding:2px 6px;border-radius:999px;background:#1f2a54;border:1px solid var(--line);font-size:11px;color:#cbd5e1}
-  .preview{background:#0f1530;border:1px solid var(--line);border-radius:14px;padding:10px}
-  iframe#preview{width:100%;height:560px;border:0;border-radius:10px;background:#0b1020}
-  .col-span-2{grid-column:1 / span 2}
-  /* promo row with label on right side */
-  .promo-row{display:flex;gap:8px;align-items:center}
-  .promo-row > input{flex:1 1 auto}
-  .w-200{width:200px}
+  .preview{height:520px; border-radius:16px; border:1px solid var(--line); background:#0b1220; overflow:hidden}
+  iframe{border:0;width:100%;height:100%;background:#fff}
+  .kv{display:grid; grid-template-columns:160px 1fr; gap:8px; align-items:center}
+  .grid{display:grid; gap:8px}
+  .hr{height:1px; background:var(--line); margin:14px 0}
 </style>
-
-<div class="wrap">
-  <div class="topbar">
-    <a href="/admin/" class="btn">← 운영 대시보드로</a>
-  </div>
-  <h2>Link Maker</h2>
-
-  <div class="layout">
-    <!-- 좌: 폼 -->
+</head>
+<body>
+  <div class="container">
     <div class="panel">
-      <div class="form-grid">
-        <!-- 기본 설정(좌) -->
-        <div>
-          <label>환경</label>
-          <select id="env"></select>
+      <h1>Link Maker</h1>
+      <div class="grid">
+        <div class="row">
+          <div>
+            <label>환경</label>
+            <select id="env">
+              <option value="staging" selected>staging</option>
+              <option value="prod">prod</option>
+            </select>
+          </div>
+          <div>
+            <label>card</label>
+            <select id="card">
+              <option value="healing" selected>healing</option>
+              <option value="hanlove">hanlove</option>
+            </select>
+          </div>
+        </div>
 
-          <label>card</label>
-          <select id="card">
-            <option value="hanlove">hanlove</option>
-            <option value="healing">healing</option>
-          </select>
-
-          <label>list</label>
-          <input id="list" placeholder="default / bible30 / custom-..." value="default"/>
-
-          <label>mode</label>
-          <select id="mode">
-            <option>daily</option><option>fixed</option><option selected>shuffle</option>
-          </select>
-
-          <label>id (mode=fixed일 때)</label>
-          <input id="itemId" placeholder="HL-002"/>
-
-          <label>옵션</label>
+        <!-- healing 전용 -->
+        <div id="healingBlock">
           <div class="row">
-            <label class="inline"><input type="checkbox" id="showCredit"> showCredit</label>
-            <label class="inline"><input type="checkbox" id="utm" checked> UTM 기본값</label>
+            <div>
+              <label>주문자</label>
+              <input id="customer" placeholder="예) Grace, Kim.M.J …">
+            </div>
+            <div>
+              <label>그룹(list)</label>
+              <input id="list" placeholder="default">
+            </div>
           </div>
-
-          <label>버전 v=</label>
-          <input id="v" placeholder="1" value="1"/>
-
-          <label style="margin-top:10px">홍보 링크(promo) · 버튼 라벨</label>
-          <div class="promo-row">
-            <input id="promo" placeholder="https://your-landing.example" />
-            <input id="promoText" class="w-200" placeholder="Open Healing Message" title="카드 버튼 라벨"/>
-          </div>
-          <div class="muted">오른쪽 입력란의 텍스트가 카드의 “Open Healing Message” 버튼 라벨에 적용됩니다.</div>
-        </div>
-
-        <!-- hanlove(우) -->
-        <div id="hanloveBlock" style="display:none">
-          <div class="muted" style="margin-bottom:6px">한글사랑 전용 · 저장소 항목 선택 → 발음/영어 자동 입력</div>
-
-          <label>한글 (검색/선택)</label>
+          <label>그룹 검색/선택</label>
           <div class="combo">
-            <input id="hanloveSearch" placeholder="예) 고마워, 사랑해, 괜찮아 …" autocomplete="off"/>
-            <div id="hanloveDropdown" class="dropdown"></div>
+            <input id="healingGroupSearch" placeholder="예) default, bible30, custom-…">
+            <div id="healingGroupDropdown" class="dropdown"></div>
           </div>
-          <div id="hanloveCount" class="muted" style="margin:6px 0 10px"></div>
-
-          <label>한국어 발음 (자동)</label>
-          <input id="hanlovePron" placeholder="go-ma-wo" disabled />
-
-          <label>영어의미 (저장소)</label>
-          <input id="hanloveEn" placeholder="It’s okay" disabled />
+          <div id="healingGroupCount" class="muted" style="margin-top:6px"></div>
         </div>
 
-        <!-- URL 섹션(2열 전체) -->
-        <div class="col-span-2">
-          <div class="row"><button id="build">링크 생성</button></div>
-          <div class="row"><input id="url" readonly></div>
-
-          <label style="margin-top:12px">단축 URL</label>
-          <div class="row" style="display:flex;gap:8px;align-items:center">
-            <input id="slug" placeholder="slug(비우면 자동 생성)" style="max-width:220px"/>
-            <button id="mkShort">단축 URL 생성</button>
+        <div class="row">
+          <div>
+            <label>mode</label>
+            <select id="mode">
+              <option value="shuffle" selected>shuffle</option>
+              <option value="daily">daily</option>
+              <option value="fixed">fixed</option>
+            </select>
           </div>
-          <div class="row"><input id="shortUrl" readonly placeholder="https://…/s/&lt;slug&gt;"/></div>
-          <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
-            <button id="copy">URL 복사</button>
-            <button id="copyShort">단축URL 복사</button>
-            <button id="dlShort">단축URL 다운로드(.txt)</button>
+          <div>
+            <label>id (mode=fixed일 때)</label>
+            <input id="itemId" placeholder="HL-002" disabled>
           </div>
         </div>
+
+        <div class="row">
+          <div class="kv"><span>showCredit</span><input id="showCredit" type="checkbox"></div>
+          <div class="kv"><span>UTM 기본값</span><input id="utm" type="checkbox" checked></div>
+        </div>
+
+        <div>
+          <label>버전 v=</label>
+          <input id="v" value="1">
+        </div>
+
+        <div class="row">
+          <div>
+            <label>홍보 링크(promo)</label>
+            <input id="promo" placeholder="https://your-landing.example">
+          </div>
+          <div>
+            <label>버튼 라벨</label>
+            <input id="promoText" value="Open Healing Message">
+          </div>
+        </div>
+
+        <div class="right">
+          <button id="build" class="btn primary">링크 생성</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div>
+          <label>단축 URL</label>
+          <div class="row">
+            <input id="slug" placeholder="slug(비우면 자동 생성)">
+            <button class="btn" id="makeShort">단축 URL 생성</button>
+          </div>
+          <div class="row">
+            <input id="shortUrl" placeholder="https://…/s/&lt;slug&gt;" readonly>
+            <div class="flex right">
+              <button class="btn" id="copyUrl">URL 복사</button>
+              <button class="btn" id="copyShort">단축URL 복사</button>
+              <button class="btn" id="dlShort">단축URL 다운로드(.txt)</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
-
-    <!-- 우: 프리뷰 -->
-    <div class="preview">
-      <iframe id="preview" title="preview"></iframe>
+    <div class="panel">
+      <div class="preview">
+        <iframe id="preview" title="preview"></iframe>
+      </div>
     </div>
   </div>
-</div>
 
 <script>
-async function loadConfig(){ const r=await fetch('/admin/config.json',{cache:'no-store'}); return r.json(); }
-function buildURL(base){
-  // healing 카드일 때 전용 파일로 라우팅
-  let pageBase = (env==='prod'?'/link/':'/link/');
-  if(card==='healing'){ pageBase='/link/healing.html'; }
+const elEnv = document.getElementById('env');
+const elCard = document.getElementById('card');
+const elList = document.getElementById('list');
+const elMode = document.getElementById('mode');
+const elId = document.getElementById('itemId');
+const elShowCredit = document.getElementById('showCredit');
+const elUTM = document.getElementById('utm');
+const elV = document.getElementById('v');
+const elPromo = document.getElementById('promo');
+const elPromoText = document.getElementById('promoText');
+const elCustomer = document.getElementById('customer');
+const elSlug = document.getElementById('slug');
+const elShort = document.getElementById('shortUrl');
+const elPreview = document.getElementById('preview');
 
-  const p = new URL(base.replace(/\/$/,'') + '/link');
-  const card = document.getElementById('card').value;
-  const list = (document.getElementById('list').value || 'default').trim() || 'default';
-  const mode = document.getElementById('mode').value;
-  const id   = document.getElementById('itemId').value.trim();
-  const v    = document.getElementById('v').value.trim();
+// healing 그룹 검색
+const hgSearch = document.getElementById('healingGroupSearch');
+const hgBox = document.getElementById('healingGroupDropdown');
+const hgCount = document.getElementById('healingGroupCount');
+let HEALING_GROUPS = {items:[]};
+
+async function loadHealingGroups(){
+  try{
+    const r = await fetch('/data/healing/groups.json',{cache:'no-store'});
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    const items = (j.groups||[]).map(g=>({key:(g.key||'').trim(), name:(g.name||'').trim(), desc:(g.desc||'').trim(), count:g.count||0}))
+      .filter(g=>g.key);
+    return {items};
+  }catch(e){ return {items:[]}; }
+}
+function renderHealingDropdown(items, kw=''){
+  hgBox.innerHTML='';
+  const lc=(kw||'').trim().toLowerCase();
+  const filtered = items.filter(it=> !lc || it.key.toLowerCase().includes(lc) || it.name.toLowerCase().includes(lc)).slice(0,200);
+  filtered.forEach(it=>{
+    const row = document.createElement('div'); row.className='item';
+    row.innerHTML = `<span>${it.name} <span class="badge">${it.key}</span></span><span class="muted" style="margin-left:auto">${it.count||''}</span>`;
+    row.onclick=()=>{ elList.value=it.key; hgBox.style.display='none'; rebuild(); };
+    hgBox.appendChild(row);
+  });
+  hgCount.textContent = `총 ${items.length}개 · 필터 ${filtered.length}개`;
+  hgBox.style.display = filtered.length?'block':'none';
+}
+document.addEventListener('click', (e)=>{ if(!hgBox.contains(e.target) && e.target!==hgSearch){ hgBox.style.display='none'; } });
+
+function buildURL(){
+  const env = elEnv.value; const card = elCard.value;
+  let pageBase = '/link/';
+  if(card==='healing'){ pageBase='/link/healing.html'; }
+  const p = new URL(pageBase, location.origin);
   p.searchParams.set('card', card);
-  p.searchParams.set('list', list);
-  p.searchParams.set('mode', mode);
-  if(mode==='fixed' && id) p.searchParams.set('id', id);
-  if(card==='hanlove' || card==='healing'){
-    const promo=(document.getElementById('promo').value||'').trim();
-    const btn=(document.getElementById('promoText').value||'').trim();
-    if(promo) p.searchParams.set('promo', promo);
-    if(btn)   p.searchParams.set('btn', btn);
-  }
-  if(document.getElementById('showCredit').checked) p.searchParams.set('showCredit','true');
-  if(card==='healing'){
-    const customer=(document.getElementById('customer')?.value||'').trim();
-    if(customer) p.searchParams.set('customer', customer);
-  }
-  if(v) p.searchParams.set('v', v);
-  if(document.getElementById('utm').checked){
-    p.searchParams.set('utm_source','qr');
-    p.searchParams.set('utm_campaign', card);
-    p.searchParams.set('utm_content', list);
+  const list = (elList.value||'').trim(); if(list) p.searchParams.set('list', list);
+  const mode = elMode.value; if(mode) p.searchParams.set('mode', mode);
+  const id = (elId.value||'').trim(); if(mode==='fixed' && id) p.searchParams.set('id', id);
+  if(elShowCredit.checked) p.searchParams.set('showCredit','true');
+  const promo=(elPromo.value||'').trim(); if(promo) p.searchParams.set('promo', promo);
+  const btn=(elPromoText.value||'').trim(); if(btn) p.searchParams.set('btn', btn);
+  const customer=(elCustomer.value||'').trim(); if(customer) p.searchParams.set('customer', customer);
+  const v=(elV.value||'').trim(); if(v) p.searchParams.set('v', v);
+  if(elUTM.checked){
+    p.searchParams.set('utm_source','linkmaker');
+    p.searchParams.set('utm_medium','qr');
   }
   return p.toString();
 }
 
-// ===== Hanlove 데이터/콤보 =====
-const $ = (q)=>document.querySelector(q);
-const elCard=$('#card'), elList=$('#list'), elMode=$('#mode'), elId=$('#itemId');
-const block=$('#hanloveBlock'), search=$('#hanloveSearch'), box=$('#hanloveDropdown');
-const inPron=$('#hanlovePron'), inEn=$('#hanloveEn'), countEl=$('#hanloveCount');
-
-let HANLOVE_CACHE={ listKey:null, items:[] };
-
-function romanizeKo(str=''){
-  const BASE=0xAC00, CHO=["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
-  const JUNG=["a","ae","ya","yae","eo","e","yeo","ye","o","wa","we","oe","yo","u","wo","we","wi","yu","eu","ui","i"];
-  const JONG=["","k","k","ks","n","nj","nh","t","l","lk","lm","lb","ls","lt","lp","lt","m","p","ps","t","t","ng","t","t","k","t","p","t"];
-  const out=[]; for(const ch of str){ const c=ch.charCodeAt(0);
-    if(c<0xAC00||c>0xD7A3){ out.push(ch); continue }
-    const s=c-BASE, cho=Math.floor(s/588), jung=Math.floor((s%588)/28), jong=s%28;
-    out.push((CHO[cho]||'')+(JUNG[jung]||'')+(JONG[jong]||'')); }
-  return out.join('-').replace(/-+/g,'-');
-}
-async function tryFetch(path){ try{ const r=await fetch(path,{cache:'no-store'}); if(!r.ok) throw 0; return await r.json() }catch{ return null } }
-async function loadHanloveData(listName){
-  const list=(listName||'default').trim()||'default';
-  const want=await tryFetch(`/data/hanlove/${list}.json`);
-  const def = want || await tryFetch('/data/hanlove/default.json');
-  const items=(def?.items||[]).filter(x=>(x.status||'APPROVED')==='APPROVED' && x.text);
-  return { listKey:list, items: items.map(x=>({id:x.id||'',text:(x.text||'').trim(),en:(x.en||'').trim(),pron:(x.pron||'')})) };
-}
-function showHanlove(on){ block.style.display=on?'block':'none'; if(!on) box.style.display='none' }
-
-// 키보드 내비
-let selIndex=-1;
-function setActiveByIndex(i){
-  const items=[...box.querySelectorAll('.item')];
-  items.forEach((n,idx)=>n.classList.toggle('active', idx===i));
-  if(i>=0 && items[i]) items[i].scrollIntoView({block:'nearest'});
-}
-function renderDropdown(items, keyword=''){
-  box.innerHTML='';
-  const lc=keyword.trim().toLowerCase();
-  const filtered=items.filter(it=>{
-    if(!lc) return true;
-    return it.text.toLowerCase().includes(lc)||it.en.toLowerCase().includes(lc)||it.id.toLowerCase().includes(lc);
-  }).slice(0,200);
-  filtered.forEach(it=>{
-    const row=document.createElement('div'); row.className='item';
-    row.innerHTML=`<span>${it.text}${it.en?` · ${it.en}`:''}</span><span class="badge">${it.id}</span>`;
-    row.onclick=()=>applySelection(it);
-    row.addEventListener('mouseenter', ()=>{ selIndex=filtered.indexOf(it); setActiveByIndex(selIndex); });
-    box.appendChild(row);
-  });
-  selIndex=-1;
-  countEl.textContent=`총 ${items.length}개 · 필터 ${filtered.length}개`;
-  box.style.display=filtered.length?'block':'none';
-}
-function applySelection(it){
-  search.value=it.text;
-  inPron.value=it.pron||romanizeKo(it.text);
-  inEn.value=it.en||'';
-  elId.value=it.id||'';
-  if(elMode.value!=='fixed') elMode.value='fixed';
-  box.style.display='none';
-  document.getElementById('build').click();
-}
-async function refreshHanloveBlock(){
-  const isHL=elCard.value==='hanlove';
-  showHanlove(isHL); if(!isHL) return;
-  const listKey=(elList.value||'default').trim()||'default';
-  if(HANLOVE_CACHE.listKey!==listKey){ HANLOVE_CACHE=await loadHanloveData(listKey); }
-  search.value=''; inPron.value=''; inEn.value=''; elId.value='';
-  renderDropdown(HANLOVE_CACHE.items,'');
+function rebuild(){
+  const url = buildURL();
+  elPreview.src = url;
 }
 
-// ===== 부트스트랩
-function wireAutoRebuild(rebuild){
+function wire(){
   const ids=['env','card','list','mode','itemId','showCredit','utm','v','promo','promoText','customer'];
   ids.forEach(id=>{
-    const el=document.getElementById(id); if(!el) return;
-    const evt=(el.tagName==='INPUT' && el.type==='text')?'input':'change';
-    el.addEventListener(evt, rebuild);
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', rebuild);
+    el.addEventListener('change', rebuild);
   });
-}
+  document.getElementById('build').addEventListener('click', rebuild);
 
-async function boot(){
-  const cfg=await loadConfig();
-  const envSel=document.getElementById('env');
-  for(const k of Object.keys(cfg.envs)){ const o=document.createElement('option'); o.value=k; o.textContent=k; envSel.appendChild(o); }
-  envSel.value=cfg.default_env||'staging';
-
-  const rebuild=()=>{
-    const base=cfg.envs[envSel.value].base;
-    const url=buildURL(base);
-    document.getElementById('url').value=url;
-    document.getElementById('preview').src=url;
-  };
-  document.getElementById('build').onclick=rebuild;
-  document.getElementById('copy').onclick=async()=>{ await navigator.clipboard.writeText(document.getElementById('url').value); alert('복사됨'); };
-  wireAutoRebuild(rebuild);
-
-  // Hanlove 이벤트
-  elCard.addEventListener('change', refreshHanloveBlock);
-  elList.addEventListener('change', refreshHanloveBlock);
-  search.addEventListener('input', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
-  search.addEventListener('focus', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
-  document.addEventListener('click', (e)=>{ if(!block.contains(e.target)) box.style.display='none'; });
-  search.addEventListener('keydown', (e)=>{
-    const items=[...box.querySelectorAll('.item')];
-    if(e.key==='ArrowDown' && items.length){ e.preventDefault(); selIndex=(selIndex+1)%items.length; setActiveByIndex(selIndex); }
-    else if(e.key==='ArrowUp' && items.length){ e.preventDefault(); selIndex=(selIndex<=0?items.length:selIndex)-1; setActiveByIndex(selIndex); }
-    else if(e.key==='Enter'){ e.preventDefault(); if(!items.length) return; if(selIndex<0) selIndex=0; items[selIndex].click(); }
-    else if(e.key==='Escape'){ box.style.display='none'; }
+  // mode → id 활성화
+  elMode.addEventListener('change', ()=>{
+    elId.disabled = elMode.value!=='fixed';
   });
 
-  // 단축 URL(문자열만 생성)
-  function fileSafe(name='link'){ return (name||'link').replace(/[\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim().slice(0,60); }
-  function slugify(s='link'){ return s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32)||'link'; }
-  const getEnglishMeaning=()=> (document.getElementById('hanloveEn')?.value||'').trim();
+  // healing 그룹 로드/검색
+  loadHealingGroups().then(j=>{ HEALING_GROUPS=j; });
+  hgSearch.addEventListener('focus', ()=>renderHealingDropdown(HEALING_GROUPS.items, hgSearch.value));
+  hgSearch.addEventListener('input', ()=>renderHealingDropdown(HEALING_GROUPS.items, hgSearch.value));
 
-  function makeShort(){
-    const base=cfg.envs[envSel.value].base.replace(/\/$/,''); 
-    const slugEl=document.getElementById('slug');
-    let slug=(slugEl.value||'').trim();
-    if(!slug){ slug=slugify(getEnglishMeaning()||document.getElementById('itemId').value||'link'); slugEl.value=slug; }
-    document.getElementById('shortUrl').value=`${base}/s/${slug}`;
-  }
-  function downloadShortTxt(){
-    const short=document.getElementById('shortUrl').value.trim();
-    if(!short){ alert('먼저 단축 URL을 생성하세요.'); return; }
-    const fname=fileSafe(getEnglishMeaning()||'link')+'.txt';
-    const blob=new Blob([short],{type:'text/plain;charset=utf-8'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1200);
-  }
-  document.getElementById('mkShort').onclick=makeShort;
-  document.getElementById('copyShort').onclick=async()=>{ const v=document.getElementById('shortUrl').value; if(!v){ alert('먼저 단축 URL을 생성하세요.'); return; } await navigator.clipboard.writeText(v); alert('단축URL 복사됨'); };
-  document.getElementById('dlShort').onclick=downloadShortTxt;
-
-  await refreshHanloveBlock();
+  // Init
+  elId.disabled = elMode.value!=='fixed';
   rebuild();
 }
-boot();
+
+wire();
 </script>
+</body>
+</html>
