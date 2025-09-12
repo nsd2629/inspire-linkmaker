@@ -1,76 +1,33 @@
-<!doctype html>
-<html lang="ko">
+
+<!doctype html><html lang="ko"><head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Link Maker</title>
-<style>
-  body{margin:0;font-family:system-ui,apple sd gothic neo,Segoe UI,Roboto,Arial,sans-serif;background:#111;color:#eee}
-  #app{min-height:100vh;display:grid;place-items:center;padding:24px}
-  .card{max-width:720px;width:100%}
-</style>
-<div id="app">Loading…</div>
-<script type="module">
-import { qs } from '../lib/utils.js';
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Link Viewer</title>
+<link rel="stylesheet" href="/assets/style.css?v=dev">
+<base href="/"/>
+</head><body>
+<main class="container">
+  <section class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2 id="title">카드 뷰</h2>
+      <div>
+        <button id="btnOpen" class="small">Open</button>
+        <button id="btnTTS" class="big">Play TTS</button>
+      </div>
+    </div>
+    <div id="message" style="font-size:24px;line-height:1.4;margin:8px 0 12px 0;"></div>
+    <div class="meta">
+      <div><strong>카드</strong><div id="metaCard">-</div></div>
+      <div><strong>ID</strong><div id="metaId">-</div></div>
+      <div><strong>주문자</strong><div id="metaOwner">-</div></div>
+      <div><strong>그룹</strong><div id="metaGroup">-</div></div>
+      <div><strong>mode</strong><div id="metaMode">-</div></div>
+      <div><strong>리스트</strong><div id="metaList">-</div></div>
+    </div>
+    <div class="footer" id="creditWrap" style="display:none"></div>
+  </section>
+</main>
 
-const params = new URLSearchParams(location.search);
-const card   = qs('card','hanlove');
-const listParam = qs('list', null);
-
-// 카드별 1차 기본 리스트
-const CARD_DEFAULT = { hanlove: 'default', healing: 'bible30' };
-const wantList = listParam || CARD_DEFAULT[card] || 'default';
-
-const REGISTRY = {
-  hanlove: { tpl: '/cards/hanlove/template.js', css: '/cards/hanlove/style.css' },
-  healing: { tpl: '/cards/healing/template.js', css: '/cards/healing/style.css' },
-};
-
-async function loadData(card, list){
-  // 1) 사용자가 요청한 리스트
-  const wantPath = `/data/${card}/${list}.json`;
-  let data = await tryFetch(wantPath);
-  if (data) return {data, path: wantPath};
-
-  // 2) 카드의 default.json (ex. healing도 여기로 안전 폴백)
-  const defPath = `/data/${card}/default.json`;
-  data = await tryFetch(defPath);
-  if (data) return {data, path: defPath};
-
-  // 3) 최후 보루: 공용 fallback
-  const fbPath = `/fallback.json`;
-  data = await tryFetch(fbPath);
-  return {data: data || {meta:{},items:[]}, path: fbPath};
-}
-
-async function tryFetch(path){
-  try{
-    const r = await fetch(path, {cache:'no-store'});
-    if(!r.ok) throw 0;
-    return await r.json();
-  }catch{ return null; }
-}
-
-async function boot(){
-  const app = document.getElementById('app');
-  const cfg = REGISTRY[card];
-  if(!cfg){ app.textContent = 'Unknown card'; return; }
-
-  // CSS 로드
-  const linkEl = document.createElement('link');
-  linkEl.rel='stylesheet'; linkEl.href=cfg.css; document.head.appendChild(linkEl);
-
-  // 데이터 로드(요청 리스트 → default.json → fallback.json)
-  const {data, path} = await loadData(card, wantList);
-
-  // 템플릿 로드 & 렌더
-  const mod = await import(cfg.tpl);
-  const view = await mod.render({ data, params });
-  app.innerHTML=''; app.appendChild(view);
-
-  // (선택) 콘솔에 실제 로드 경로 표시
-  console.info('[LinkMaker] data loaded from:', path);
-}
-boot();
-</script>
-
-</html>
+<script>window.APP_VERSION="dev";</script>
+<script type="module" src="/link/app.js?v=dev"></script>
+</body></html>

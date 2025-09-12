@@ -1,17 +1,27 @@
-export async function onRequestGet({ env, params, request }) {
-  const slug = params.slug?.toLowerCase();
-  if (!slug || !/^[a-z0-9-]{1,32}$/.test(slug)) return new Response('Not found', { status: 404 });
 
-  const rec = await env.SLUGS.get(slug, { type: 'json' });
-  if (!rec || !rec.path) return new Response('No slug mapping', { status: 404 });
+export const onRequestGet = async (ctx) => {
+  const { SLUGS } = ctx.env;
+  const slug = ctx.params.slug;
 
-  const now = new URL(request.url);
-  const target = new URL(rec.path.startsWith('/') ? rec.path : '/'+rec.path, now.origin);
-
-  // /s/<slug>?utm_* → 대상에 없을 때만 보존
-  const inQs = new URL(request.url).searchParams;
-  for (const [k, v] of inQs.entries()) {
-    if (k.startsWith('utm_') && !target.searchParams.has(k)) target.searchParams.set(k, v);
+  let target;
+  if (SLUGS) {
+    try { target = await SLUGS.get(slug); } catch(e){}
   }
-  return new Response(null, { status: 302, headers: { Location: target.toString(), 'Cache-Control': 'no-store' } });
-}
+  if (!target) {
+    const url = new URL(ctx.request.url);
+    const host = url.origin;
+    const res = await fetch(`${host}/data/slugs.json`, { cf: { cacheTtl: 30 }});
+    try {
+      const map = await res.json();
+      target = map[slug];
+    } catch(e){}
+  }
+  if (!target) return new Response("Not Found", { status: 404 });
+
+  const commit = ctx.env.COMMIT_SHA || "dev";
+  const turl = new URL(target);
+  if (!turl.searchParams.has("v")) {
+    turl.searchParams.set("v", commit);
+  }
+  return Response.redirect(turl.toString(), 302);
+};
