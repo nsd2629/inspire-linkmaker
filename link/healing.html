@@ -17,7 +17,7 @@
     .card{padding:28px 28px 32px;border-radius:24px;background:var(--card);backdrop-filter: blur(6px);box-shadow:var(--shadow);text-align:center}
     h1{margin:0 0 8px;font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:.2px}
     h2{margin:0 0 18px;font-weight:500;font-size:clamp(15px,2.4vw,18px);color:var(--fg2)}
-    .msg{font-weight:800;font-size:clamp(18px,2.6vw,22px);color:var(--fg);margin-top:8px;word-break:keep-all}
+    .msg{font-weight:800;font-size:clamp(20px,2.8vw,24px);color:var(--fg);margin-top:8px;word-break:keep-all}
     .meta{margin-top:14px;font-size:12px;color:var(--fg2)}
     .credit{margin-top:12px;font-size:11px;color:var(--fg2)}
     .hidden{display:none}
@@ -43,7 +43,7 @@
   <script>
   const qs = new URLSearchParams(location.search);
   const list = qs.get('list') || 'default';
-  const mode = qs.get('mode') || 'daily';     // daily | random | fixed
+  const mode = (qs.get('mode') || 'daily').toLowerCase(); // daily | shuffle | fixed
   const id   = qs.get('id') || '';
   const customer = qs.get('customer') || '';
   const showCredit = qs.get('showCredit')==='true';
@@ -51,17 +51,13 @@
   const ctaText = qs.get('btn') || 'Open Healing Message';
 
   const title = document.getElementById('title');
-  const subtitle = document.getElementById('subtitle');
   const msgEl = document.getElementById('msg');
   const meta = document.getElementById('meta');
   const credit = document.getElementById('credit');
   const ttsBtn = document.getElementById('tts');
   const ctaBtn = document.getElementById('cta');
 
-  // UI text
   title.textContent = customer ? `${customer} Healing Sign` : 'Healing Sign';
-  // subtitle stays as is (can be swapped via qs later)
-
   ctaBtn.href = ctaHref || '#';
   ctaBtn.textContent = ctaText;
 
@@ -72,7 +68,6 @@
     'https://images.unsplash.com/photo-1499084732479-de2c02d45fc4?auto=format&fit=crop&w=1920&q=80',
     'https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=1920&q=80'
   ];
-
   function dailyIndex(l){ const n=new Date(); const y=n.getFullYear(), m=n.getMonth()+1, d=n.getDate(); return (y*10000+m*100+d)%l; }
 
   async function loadList(name){
@@ -86,11 +81,11 @@
       return items;
     }catch(e){
       return [
-        {id:'HM-001', text:'오늘의 햇살처럼 마음도 밝아지길.'},
-        {id:'HM-002', text:'숨 한번 깊게, 괜찮아질 거야.'},
-        {id:'HM-003', text:'작은 은혜가 큰 기쁨을 만듭니다.'},
-        {id:'HM-004', text:'마음에 평안을 누리세요.'},
-        {id:'HM-005', text:'천천히, 그러나 꾸준히.'}
+        {id:'HL-001', text:'오늘의 햇살처럼 마음도 밝아지길.'},
+        {id:'HL-002', text:'숨 한번 깊게, 괜찮아질 거야.'},
+        {id:'HL-003', text:'작은 은혜가 큰 기쁨을 만듭니다.'},
+        {id:'HL-004', text:'마음에 평안을 누리세요.'},
+        {id:'HL-005', text:'천천히, 그러나 꾸준히.'}
       ];
     }
   }
@@ -103,7 +98,7 @@
       }
       return items[0];
     }
-    if(mode==='random'){
+    if(mode==='shuffle'){ // session 랜덤
       return items[Math.floor(Math.random()*items.length)];
     }
     // daily
@@ -125,7 +120,6 @@
 
     if(showCredit){ credit.classList.remove('hidden'); }
 
-    // Simple browser TTS (ko-KR). Safe fallback.
     ttsBtn.addEventListener('click', ()=>{
       try{
         const u = new SpeechSynthesisUtterance(it.text);
@@ -135,7 +129,6 @@
       }catch(e){ alert('TTS not supported on this browser.'); }
     });
   }
-
   boot();
   </script>
 </body>
