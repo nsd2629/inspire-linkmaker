@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>한글사랑 링크메이커</title>
+<meta name="color-scheme" content="dark light">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#0f1624; --panel2:#0c1320; --fg:#e6edf3; --muted:#95a1b2; --accent:#7aa2ff; --line:#1e2a3a;
+    --btn:#1f6feb; --btn2:#263241;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f8fb; --panel:#fff; --panel2:#f4f7fb; --fg:#0c1220; --muted:#5b6472; --accent:#335fff; --line:#e7edf5; --btn:#3556ff; --btn2:#eef2f9;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+  h1{font-size:20px;margin:18px 0 14px 0}
+  .container{display:grid;grid-template-columns: minmax(360px,520px) 1fr; gap:18px; padding:18px}
+  .panel{background:linear-gradient(180deg, var(--panel), var(--panel2)); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  label{display:block;color:var(--muted);margin:12px 0 6px}
+  input,select,textarea{width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:#0a1220; color:var(--fg); outline:none}
+  select{appearance:none; background-image:url('data:image/svg+xml;utf8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;16&quot; height=&quot;16&quot; fill=&quot;%2395a1b2&quot;><path d=&quot;M4 6l4 4 4-4&quot;/></svg>'); background-repeat:no-repeat; background-position: calc(100% - 10px) center}
+  input::placeholder{color:#6f7a8a}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; border:1px solid var(--line); background:var(--btn2); color:var(--fg); cursor:pointer; user-select:none}
+  .btn.primary{ background:var(--btn); border-color:#21408f }
+  .muted{color:var(--muted)}
+  .flex{display:flex; gap:10px; align-items:center}
+  .right{display:flex; justify-content:flex-end}
+  .badge{display:inline-block; padding:3px 8px; border-radius:999px; background:#1b2840; color:#c8d4ea; font-size:12px}
+  .dropdown{position:absolute; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:6px; width:100%; max-height:240px; overflow:auto; display:none; z-index:20}
+  .dropdown .item{padding:8px 10px;border-radius:10px;display:flex;gap:8px;align-items:center;cursor:pointer}
+  .dropdown .item:hover{background:rgba(125,150,255,.1)}
+  .combo{position:relative}
+  .preview{height:520px; border-radius:16px; border:1px solid var(--line); background:#0b1220; overflow:hidden}
+  iframe{border:0;width:100%;height:100%;background:#fff}
+  .kv{display:grid; grid-template-columns:160px 1fr; gap:8px; align-items:center}
+  .grid{display:grid; gap:8px}
+  .hr{height:1px; background:var(--line); margin:14px 0}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <h1>한글사랑 링크메이커</h1>
+      <div class="grid">
+        <div class="row">
+          <div>
+            <label>환경</label>
+            <select id="env">
+              <option value="staging" selected>staging</option>
+              <option value="prod">prod</option>
+            </select>
+          </div>
+          <div>
+            <label>card</label>
+            <input value="hanlove" disabled>
+          </div>
+        </div>
+
+        <div id="hanloveBlock">
+          <label>그룹(list)</label>
+          <input id="list" placeholder="default">
+          <label>한글(검색/선택)</label>
+          <div class="combo">
+            <input id="hanSearch" placeholder="예) HL-001, 사랑해, 감사해 …">
+            <div id="hanDropdown" class="dropdown"></div>
+          </div>
+          <div id="hanCount" class="muted" style="margin-top:6px"></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>mode</label>
+            <select id="mode">
+              <option value="fixed" selected>fixed</option>
+              <option value="daily">daily</option>
+              <option value="shuffle">shuffle</option>
+            </select>
+          </div>
+          <div>
+            <label>id (mode=fixed일 때)</label>
+            <input id="itemId" placeholder="HL-001">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="kv"><span>showCredit</span><input id="showCredit" type="checkbox"></div>
+          <div class="kv"><span>UTM 기본값</span><input id="utm" type="checkbox" checked></div>
+        </div>
+
+        <div>
+          <label>버전 v=</label>
+          <input id="v" value="1">
+        </div>
+
+        <div class="row">
+          <div>
+            <label>홍보 링크(promo)</label>
+            <input id="promo" placeholder="https://your-landing.example">
+          </div>
+          <div>
+            <label>버튼 라벨</label>
+            <input id="promoText" value="Open Hanlove">
+          </div>
+        </div>
+
+        <div class="right">
+          <button id="build" class="btn primary">링크 생성</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div>
+          <label>단축 URL</label>
+          <div class="row">
+            <input id="slug" placeholder="slug(비우면 자동 생성)">
+            <button class="btn" id="makeShort">단축 URL 생성</button>
+          </div>
+          <div class="row">
+            <input id="shortUrl" placeholder="https://…/s/<slug>" readonly>
+            <div class="flex right">
+              <button class="btn" id="copyUrl">URL 복사</button>
+              <button class="btn" id="copyShort">단축URL 복사</button>
+              <button class="btn" id="dlShort">단축URL 다운로드(.txt)</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="panel">
+      <div class="preview">
+        <iframe id="preview" title="preview"></iframe>
+      </div>
+    </div>
+  </div>
+
+<script>
+const elEnv = document.getElementById('env');
+const elList = document.getElementById('list');
+const elMode = document.getElementById('mode');
+const elId = document.getElementById('itemId');
+const elShowCredit = document.getElementById('showCredit');
+const elUTM = document.getElementById('utm');
+const elV = document.getElementById('v');
+const elPromo = document.getElementById('promo');
+const elPromoText = document.getElementById('promoText');
+const elSlug = document.getElementById('slug');
+const elShort = document.getElementById('shortUrl');
+const elPreview = document.getElementById('preview');
+
+// hanlove 검색(아이템/문구)
+const hSearch = document.getElementById('hanSearch');
+const hBox = document.getElementById('hanDropdown');
+const hCount = document.getElementById('hanCount');
+let HANLOVE_ITEMS = {items:[]};
+
+async function loadHanlove(){
+  try{
+    const r = await fetch('/data/hanlove/items.json',{cache:'no-store'});
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    const items = (j.items||[]).map(x=>({
+      id:(x.id||'').trim(), text:(x.text||'').trim(), list:(x.list||'default').trim()
+    })).filter(x=>x.id||x.text);
+    return {items};
+  }catch(e){ return {items:[]}; }
+}
+function renderHanDropdown(items, kw=''){
+  hBox.innerHTML='';
+  const lc=(kw||'').trim().toLowerCase();
+  const filtered = items.filter(it=> !lc
+      || it.id.toLowerCase().includes(lc)
+      || it.text.toLowerCase().includes(lc)).slice(0,200);
+  filtered.forEach(it=>{
+    const row = document.createElement('div'); row.className='item';
+    row.innerHTML = `<span>${it.text||'(문구없음)'} <span class="badge">${it.id}</span></span><span class="muted" style="margin-left:auto">${it.list}</span>`;
+    row.onclick=()=>{ elId.value=it.id; elList.value=it.list; hBox.style.display='none'; rebuild(); };
+    hBox.appendChild(row);
+  });
+  hCount.textContent = `총 ${items.length}개 · 필터 ${filtered.length}개`;
+  hBox.style.display = filtered.length?'block':'none';
+}
+document.addEventListener('click', (e)=>{ if(!hBox.contains(e.target) && e.target!==hSearch){ hBox.style.display='none'; } });
+
+function buildURL(){
+  // 한글사랑은 기존 /link/?card=hanlove 사용
+  const p = new URL('/link/', location.origin);
+  p.searchParams.set('card','hanlove');
+  const list=(elList.value||'').trim(); if(list) p.searchParams.set('list', list);
+  const mode = elMode.value; if(mode) p.searchParams.set('mode', mode);
+  const id=(elId.value||'').trim(); if(id) p.searchParams.set('id', id);
+  if(elShowCredit.checked) p.searchParams.set('showCredit','true');
+  const promo=(elPromo.value||'').trim(); if(promo) p.searchParams.set('promo', promo);
+  const btn=(elPromoText.value||'').trim(); if(btn) p.searchParams.set('btn', btn);
+  const v=(elV.value||'').trim(); if(v) p.searchParams.set('v', v);
+  if(elUTM.checked){ p.searchParams.set('utm_source','linkmaker'); p.searchParams.set('utm_medium','qr'); }
+  return p.toString();
+}
+function rebuild(){ elPreview.src = buildURL(); }
+function wire(){
+  const ids=['env','list','mode','itemId','showCredit','utm','v','promo','promoText'];
+  ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.addEventListener('input',rebuild); el.addEventListener('change',rebuild); });
+  document.getElementById('build').addEventListener('click', rebuild);
+  loadHanlove().then(j=>{ HANLOVE_ITEMS=j; });
+  hSearch.addEventListener('focus', ()=>renderHanDropdown(HANLOVE_ITEMS.items, hSearch.value));
+  hSearch.addEventListener('input', ()=>renderHanDropdown(HANLOVE_ITEMS.items, hSearch.value));
+  rebuild();
+}
+wire();
+</script>
+</body></html>
