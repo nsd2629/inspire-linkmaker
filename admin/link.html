@@ -103,7 +103,24 @@
           <input id="hanloveEn" placeholder="It’s okay" disabled />
         </div>
 
-        <!-- URL 섹션(2열 전체) -->
+        
+        <!-- healing(우) -->
+        <div id="healingBlock" style="display:none">
+          <div class="muted" style="margin-bottom:6px">힐링 전용 · 저장소 그룹 선택 → list에 반영 · 주문자 이름 전달</div>
+
+          <label>주문자</label>
+          <input id="customer" placeholder="예) Grace, Kim.M.J …" autocomplete="off"/>
+
+          <label>그룹 (검색/선택)</label>
+          <div class="combo">
+            <input id="healingGroupSearch" placeholder="예) default, bible30, custom-…" autocomplete="off"/>
+            <div id="healingGroupDropdown" class="dropdown"></div>
+          </div>
+          <div id="healingGroupCount" class="muted" style="margin:6px 0 10px"></div>
+          <div class="muted">선택한 그룹 키가 왼쪽 <b>list</b> 입력란에 자동 채워집니다.</div>
+        </div>
+
+        <!-- URL 석션(2열 전체) -->
         <div class="col-span-2">
           <div class="row"><button id="build">링크 생성</button></div>
           <div class="row"><input id="url" readonly></div>
@@ -143,13 +160,17 @@ function buildURL(base){
   p.searchParams.set('list', list);
   p.searchParams.set('mode', mode);
   if(mode==='fixed' && id) p.searchParams.set('id', id);
-  if(card==='hanlove'){
+  if(card==='hanlove' || card==='healing'){
     const promo=(document.getElementById('promo').value||'').trim();
     const btn=(document.getElementById('promoText').value||'').trim();
     if(promo) p.searchParams.set('promo', promo);
     if(btn)   p.searchParams.set('btn', btn);
   }
   if(document.getElementById('showCredit').checked) p.searchParams.set('showCredit','true');
+  if(card==='healing'){
+    const customer=(document.getElementById('customer')?.value||'').trim();
+    if(customer) p.searchParams.set('customer', customer);
+  }
   if(v) p.searchParams.set('v', v);
   if(document.getElementById('utm').checked){
     p.searchParams.set('utm_source','qr');
@@ -160,6 +181,61 @@ function buildURL(base){
 }
 
 // ===== Hanlove 데이터/콤보 =====
+// ===== Healing 그룹 데이터/콤보 =====
+const blockH = document.querySelector('#healingBlock');
+const hgSearch = document.querySelector('#healingGroupSearch');
+const hgBox = document.querySelector('#healingGroupDropdown');
+const hgCount = document.querySelector('#healingGroupCount');
+const inCustomer = document.querySelector('#customer');
+
+let HEALING_GROUPS = { items: [] };
+
+async function loadHealingGroups(){
+  try{
+    const r = await fetch('/data/healing/groups.json',{cache:'no-store'});
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    const items = (j.groups||[]).map(g=>({
+      key: (g.key||'').trim(),
+      name: (g.name||'').trim(),
+      desc: (g.desc||'').trim(),
+      count: g.count||0
+    })).filter(g=>g.key);
+    return { items };
+  }catch(e){ return { items: [] }; }
+}
+
+function showHealing(on){ blockH.style.display = on?'block':'none'; if(!on) hgBox.style.display='none'; }
+
+function renderHealingDropdown(items, kw=''){
+  hgBox.innerHTML='';
+  const lc = (kw||'').trim().toLowerCase();
+  const filtered = items.filter(it=> !lc || it.key.toLowerCase().includes(lc) || it.name.toLowerCase().includes(lc)).slice(0,200);
+  filtered.forEach(it=>{
+    const row = document.createElement('div'); row.className = 'item';
+    row.innerHTML = `<span>${it.name} <span class="badge">${it.key}</span></span><span class="muted" style="margin-left:auto">${it.count||''}</span>`;
+    row.onclick = ()=>applyHealingGroup(it);
+    hgBox.appendChild(row);
+  });
+  hgCount.textContent = `총 ${items.length}개 · 필터 ${filtered.length}개`;
+  hgBox.style.display = filtered.length?'block':'none';
+}
+
+function applyHealingGroup(it){
+  hgSearch.value = it.name;
+  document.getElementById('list').value = it.key;
+  hgBox.style.display = 'none';
+  document.getElementById('build').click();
+}
+
+async function refreshHealingBlock(){
+  const isHealing = elCard.value==='healing';
+  showHealing(isHealing); if(!isHealing) return;
+  if(!HEALING_GROUPS.items.length){ HEALING_GROUPS = await loadHealingGroups(); }
+  hgSearch.value='';
+  renderHealingDropdown(HEALING_GROUPS.items,'');
+}
+
 const $ = (q)=>document.querySelector(q);
 const elCard=$('#card'), elList=$('#list'), elMode=$('#mode'), elId=$('#itemId');
 const block=$('#hanloveBlock'), search=$('#hanloveSearch'), box=$('#hanloveDropdown');
@@ -232,7 +308,7 @@ async function refreshHanloveBlock(){
 
 // ===== 부트스트랩
 function wireAutoRebuild(rebuild){
-  const ids=['env','card','list','mode','itemId','showCredit','utm','v','promo','promoText'];
+  const ids=['env','card','list','mode','itemId','showCredit','utm','v','promo','promoText','customer'];
   ids.forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     const evt=(el.tagName==='INPUT' && el.type==='text')?'input':'change';
@@ -257,6 +333,12 @@ async function boot(){
   wireAutoRebuild(rebuild);
 
   // Hanlove 이벤트
+  // Healing 이벤트
+  elCard.addEventListener('change', refreshHealingBlock);
+  elList.addEventListener('change', refreshHealingBlock);
+  hgSearch?.addEventListener('input', ()=>renderHealingDropdown(HEALING_GROUPS.items, hgSearch.value));
+  hgSearch?.addEventListener('focus', ()=>renderHealingDropdown(HEALING_GROUPS.items, hgSearch.value));
+  document.addEventListener('click', (e)=>{ if(blockH && !blockH.contains(e.target)) hgBox.style.display='none'; });
   elCard.addEventListener('change', refreshHanloveBlock);
   elList.addEventListener('change', refreshHanloveBlock);
   search.addEventListener('input', ()=>renderDropdown(HANLOVE_CACHE.items, search.value));
@@ -294,6 +376,7 @@ async function boot(){
   document.getElementById('dlShort').onclick=downloadShortTxt;
 
   await refreshHanloveBlock();
+  await refreshHealingBlock();
   rebuild();
 }
 boot();
