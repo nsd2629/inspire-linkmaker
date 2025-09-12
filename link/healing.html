@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Healing Sign</title>
+  <meta name="color-scheme" content="light dark">
+  <style>
+    *{box-sizing:border-box}
+    :root{--fg:#252525;--fg2:#555;--card:rgba(255,255,255,.86);--shadow:0 10px 30px rgba(0,0,0,.18)}
+    @media (prefers-color-scheme: dark){
+      :root{--fg:#e9e9ee;--fg2:#bdbdc4;--card:rgba(24,26,32,.74);--shadow:0 20px 40px rgba(0,0,0,.4)}
+    }
+    html,body{height:100%}
+    body{margin:0;display:grid;place-items:center;background:linear-gradient(135deg,#fff8f0,#ffe9e1);background-size:cover;background-position:center;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--fg)}
+    .wrap{width:min(92vw,720px);padding:28px}
+    .card{padding:28px 28px 32px;border-radius:24px;background:var(--card);backdrop-filter: blur(6px);box-shadow:var(--shadow);text-align:center}
+    h1{margin:0 0 8px;font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:.2px}
+    h2{margin:0 0 18px;font-weight:500;font-size:clamp(15px,2.4vw,18px);color:var(--fg2)}
+    .msg{font-weight:800;font-size:clamp(18px,2.6vw,22px);color:var(--fg);margin-top:8px;word-break:keep-all}
+    .meta{margin-top:14px;font-size:12px;color:var(--fg2)}
+    .credit{margin-top:12px;font-size:11px;color:var(--fg2)}
+    .hidden{display:none}
+    .btns{display:flex;gap:10px;justify-content:center;margin-top:16px}
+    button, a.btn{appearance:none;border:0;border-radius:999px;padding:10px 14px;font-weight:700;font-size:12px;box-shadow:var(--shadow);background:#111;color:#fff;cursor:pointer;text-decoration:none}
+    .soft{background:#fff;color:#111}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1 id="title">K-Mood Hangeul</h1>
+      <h2 id="subtitle">당신의 오늘이 따뜻하길</h2>
+      <div id="msg" class="msg"></div>
+      <div class="btns">
+        <button id="tts" class="soft">Play TTS (KO)</button>
+        <a id="cta" class="btn" href="#" target="_blank" rel="noopener">Open Healing Message</a>
+      </div>
+      <div id="meta" class="meta"></div>
+      <div id="credit" class="credit hidden">Font: Pretendard · Background: Unsplash</div>
+    </div>
+  </div>
+  <script>
+  const qs = new URLSearchParams(location.search);
+  const list = qs.get('list') || 'default';
+  const mode = qs.get('mode') || 'daily';     // daily | random | fixed
+  const id   = qs.get('id') || '';
+  const customer = qs.get('customer') || '';
+  const showCredit = qs.get('showCredit')==='true';
+  const ctaHref = qs.get('promo') || '';
+  const ctaText = qs.get('btn') || 'Open Healing Message';
+
+  const title = document.getElementById('title');
+  const subtitle = document.getElementById('subtitle');
+  const msgEl = document.getElementById('msg');
+  const meta = document.getElementById('meta');
+  const credit = document.getElementById('credit');
+  const ttsBtn = document.getElementById('tts');
+  const ctaBtn = document.getElementById('cta');
+
+  // UI text
+  title.textContent = customer ? `${customer} Healing Sign` : 'Healing Sign';
+  // subtitle stays as is (can be swapped via qs later)
+
+  ctaBtn.href = ctaHref || '#';
+  ctaBtn.textContent = ctaText;
+
+  const stockBG = [
+    'https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80',
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80',
+    'https://images.unsplash.com/photo-1499084732479-de2c02d45fc4?auto=format&fit=crop&w=1920&q=80',
+    'https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=1920&q=80'
+  ];
+
+  function dailyIndex(l){ const n=new Date(); const y=n.getFullYear(), m=n.getMonth()+1, d=n.getDate(); return (y*10000+m*100+d)%l; }
+
+  async function loadList(name){
+    const url = `/data/healing/${encodeURIComponent(name)}.json`;
+    try{
+      const r = await fetch(url, {cache:'no-store'});
+      if(!r.ok) throw 0;
+      const j = await r.json();
+      let items = (j.items||[]).map(x=>({ id: x.id||'', text: x.text||'', bg: x.bg||'' })).filter(x=>x.text);
+      if(!items.length) throw 0;
+      return items;
+    }catch(e){
+      return [
+        {id:'HM-001', text:'오늘의 햇살처럼 마음도 밝아지길.'},
+        {id:'HM-002', text:'숨 한번 깊게, 괜찮아질 거야.'},
+        {id:'HM-003', text:'작은 은혜가 큰 기쁨을 만듭니다.'},
+        {id:'HM-004', text:'마음에 평안을 누리세요.'},
+        {id:'HM-005', text:'천천히, 그러나 꾸준히.'}
+      ];
+    }
+  }
+
+  function pickItem(items){
+    if(mode==='fixed'){
+      if(id){
+        const f = items.find(x=>x.id===id);
+        if(f) return f;
+      }
+      return items[0];
+    }
+    if(mode==='random'){
+      return items[Math.floor(Math.random()*items.length)];
+    }
+    // daily
+    return items[dailyIndex(items.length)];
+  }
+
+  async function boot(){
+    const items = await loadList(list);
+    const it = pickItem(items);
+    msgEl.textContent = it.text;
+
+    const bg = it.bg || stockBG[dailyIndex(stockBG.length)];
+    const img = new Image();
+    img.onload = ()=>{ document.body.style.backgroundImage = `url(${bg})`; };
+    img.src = bg;
+
+    const ymd = (new Date()).toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
+    meta.textContent = `${ymd}${customer? ' · '+customer:''} · mode: ${mode}${id? ' · '+id:''}`;
+
+    if(showCredit){ credit.classList.remove('hidden'); }
+
+    // Simple browser TTS (ko-KR). Safe fallback.
+    ttsBtn.addEventListener('click', ()=>{
+      try{
+        const u = new SpeechSynthesisUtterance(it.text);
+        u.lang = 'ko-KR';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }catch(e){ alert('TTS not supported on this browser.'); }
+    });
+  }
+
+  boot();
+  </script>
+</body>
+</html>
