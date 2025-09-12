@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "id": "HL-001",
+      "text": "괜찮아",
+      "list": "default"
+    },
+    {
+      "id": "HL-002",
+      "text": "고마워",
+      "list": "default"
+    },
+    {
+      "id": "HL-003",
+      "text": "사랑해",
+      "list": "default"
+    },
+    {
+      "id": "HL-004",
+      "text": "참 잘했어",
+      "list": "default"
+    },
+    {
+      "id": "HL-005",
+      "text": "힘내",
+      "list": "default"
+    }
+  ]
+}
