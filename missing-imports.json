@@ -1,0 +1,12 @@
+﻿[
+    {
+        "ImportFrom":  "link\\app.js",
+        "Spec":  "./core/util.js",
+        "Resolved":  "link\\.\\core\\util.js"
+    },
+    {
+        "ImportFrom":  "link\\app.js",
+        "Spec":  "./core/storage.js",
+        "Resolved":  "link\\.\\core\\storage.js"
+    }
+]

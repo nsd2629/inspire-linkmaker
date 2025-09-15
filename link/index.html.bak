@@ -1,0 +1,35 @@
+﻿
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Link Viewer</title>
+<link rel="stylesheet" href="./assets/style.css">
+<base href="/"/>
+</head><body>
+<main class="container">
+  <section class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2 id="title">移대뱶 酉?/h2>
+      <div>
+        <button id="btnOpen" class="small">Open</button>
+        <button id="btnTTS" class="big">Play TTS</button>
+      </div>
+    </div>
+    <div id="message" style="font-size:24px;line-height:1.4;margin:8px 0 12px 0;"></div>
+    <div class="meta">
+      <div><strong>移대뱶</strong><div id="metaCard">-</div></div>
+      <div><strong>ID</strong><div id="metaId">-</div></div>
+      <div><strong>二쇰Ц??/strong><div id="metaOwner">-</div></div>
+      <div><strong>洹몃９</strong><div id="metaGroup">-</div></div>
+      <div><strong>mode</strong><div id="metaMode">-</div></div>
+      <div><strong>由ъ뒪??/strong><div id="metaList">-</div></div>
+    </div>
+    <div class="footer" id="creditWrap" style="display:none"></div>
+  </section>
+</main>
+
+<script>window.APP_VERSION="dev";</script>
+<script type="module" src="./app.js"></script>
+</body></html>
+
+
