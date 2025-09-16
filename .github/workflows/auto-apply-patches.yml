@@ -1,11 +1,15 @@
 name: Apply Patches & Deploy
 
 on:
-  # 1) 이슈 큐잉 워크플로가 끝나면 따라 실행
+  # 이슈 큐잉 워크플로가 끝나면 자동으로 이어 실행
   workflow_run:
     workflows: ["Issue -> Queue Patch"]
     types: [completed]
-  # 2) 수동/직접 커밋으로도 실행되게 유지
+
+  # 필요시 수동 실행 버튼
+  workflow_dispatch:
+
+  # 직접 커밋(로컬 등)에도 반응 유지
   push:
     branches: ["production"]
     paths:
@@ -16,7 +20,7 @@ permissions:
 
 jobs:
   apply-and-deploy:
-    # workflow_run으로 올 때는 성공한 경우에만 진행
+    # workflow_run일 때는 '성공'한 경우에만 진행
     if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +56,7 @@ jobs:
             for i in $(seq 0 $((COUNT-1))); do
               TARGET=$(jq -r ".changes[$i].path" "$FILE")
               ANCHOR=$(jq -r ".changes[$i].anchor // \"\"" "$FILE")
-              MODE=$(jq -r ".changes[$i].mode // \"append\"" "$FILE")
+              MODE=$(jq -r ".changes[$i].mode // \"append\"" "$FILE")   # replace/insert_before/insert_after/append
               CODE=$(jq -r ".changes[$i].code" "$FILE")
 
               mkdir -p "$(dirname "$TARGET")"
@@ -60,47 +64,9 @@ jobs:
 
               if [ "$MODE" = "replace" ]; then
                 printf "%s" "$CODE" > "$TARGET"
+
               elif [ "$MODE" = "insert_before" ]; then
                 if grep -Fq "$ANCHOR" "$TARGET"; then
                   awk -v a="$ANCHOR" -v code="$CODE" 'index($0,a){print code; print; next}1' "$TARGET" > "$TARGET.new" && mv "$TARGET.new" "$TARGET"
                 else
-                  printf "\n%s\n" "$CODE" >> "$TARGET"
-                fi
-              elif [ "$MODE" = "insert_after" ]; then
-                if grep -Fq "$ANCHOR" "$TARGET"; then
-                  awk -v a="$ANCHOR" -v code="$CODE" 'index($0,a){print; print code; next}1' "$TARGET" > "$TARGET.new" && mv "$TARGET.new" "$TARGET"
-                else
-                  printf "\n%s\n" "$CODE" >> "$TARGET"
-                fi
-              else
-                printf "\n%s\n" "$CODE" >> "$TARGET"
-              fi
-            done
-
-            rm -f "$FILE"
-            changed=1
-          done
-
-          if [ "$changed" = "1" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "auto-apply: queue patches" || echo "No changes to commit"
-            git push origin HEAD:production
-          fi
-
-      - name: Install deps
-        run: npm ci
-
-      - name: Build (Vite)
-        run: npm run build
-
-      - name: Deploy with Wrangler
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: |
-            pages deploy dist \
-              --project-name ${{ secrets.CLOUDFLARE_PROJECT_NAME }} \
-              --branch production
+                  printf "\n%s\n" "$CODE" >>
