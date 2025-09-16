@@ -1,51 +1,45 @@
-name: Issue -> Auto Patch
+name: Issue -> Queue Patch
 
 on:
   issues:
-    types: [opened]
+    types: [opened]   # 이슈가 생성되면 바로 실행
 
 permissions:
   contents: write
-  pull-requests: write
   issues: read
 
 jobs:
-  from-issue:
+  queue:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout production
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Switch to production branch
-        run: |
-          if git show-ref --verify --quiet refs/heads/production; then
-            git checkout production
-          else
-            git checkout -b production
-          fi
+          ref: production
 
       - name: Extract patch JSON from issue body
         id: extract
+        shell: bash
         run: |
           body="${{ github.event.issue.body }}"
-          echo "$body" > issue-body.txt
-          json=$(cat issue-body.txt | awk 'BEGIN{f=0} /\{/{f=1} {if(f)print} /\}/{if(f){print; exit}}')
+          echo "$body" > issue_body.txt
+          # 본문에서 첫 '{' ~ 마지막 '}' 까지를 JSON으로 추출
+          json=$(awk 'BEGIN{f=0} /\{/{f=1} {if(f)print} /\}/{if(f){print; exit}}' issue_body.txt)
           if [ -z "$json" ]; then
-            echo "No JSON found in issue body"; exit 1
+            echo "❌ No JSON found in issue body"; exit 1
           fi
-          echo "json<<EOF" >> $GITHUB_OUTPUT
+          echo "json<<'EOF'" >> $GITHUB_OUTPUT
           echo "$json" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Save to queue file and commit
+      - name: Save to queue and commit
+        shell: bash
         run: |
           mkdir -p patches/queue
-          FN="patches/queue/issue-${{ github.event.issue.number }}.patch.json"
-          printf "%s" "${{ steps.extract.outputs.json }}" > "$FN"
-
+          fn="patches/queue/issue-${{ github.event.issue.number }}.patch.json"
+          printf '%s' "${{ steps.extract.outputs.json }}" > "$fn"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$FN"
-          git commit -m "queue: issue #${{ github.event.issue.number }}"
-          git push origin production
+          git add "$fn"
+          git commit -m "queue: issue #${{ github.event.issue.number }}" || echo "No changes to commit"
+          git push origin HEAD:production
