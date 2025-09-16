@@ -1,36 +1,65 @@
 name: Issue -> Queue Patch
+
 on:
   issues:
-    types: [opened]
+    types: [opened, edited, labeled]   # 편집/라벨 변경에도 재실행
+
 permissions:
   contents: write
   issues: read
+
 jobs:
   queue:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout production
+        uses: actions/checkout@v4
         with:
           ref: production
-      - name: Extract patch JSON
+          fetch-depth: 0
+
+      - name: Extract patch JSON from issue body (robust)
         id: extract
         shell: bash
         run: |
-          body="${{ github.event.issue.body }}"
-          echo "$body" > issue_body.txt
-          json=$(awk 'BEGIN{f=0} /\{/{f=1} {if(f)print} /\}/{if(f){print; exit}}' issue_body.txt)
-          if [ -z "$json" ]; then echo "No JSON"; exit 1; fi
-          echo "json<<'EOF'" >> $GITHUB_OUTPUT
-          echo "$json" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      - name: Save to queue and commit
+          python - <<'PY' > json.txt
+import os, sys, json, re
+body = os.environ.get("ISSUE_BODY", "")
+# 1) 코드펜스 ```json ... ``` 안을 우선 탐색
+m = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", body, re.I)
+candidates = []
+if m:
+    candidates.append(m.group(1))
+# 2) fallback: 본문 전체에서 '첫 {' ~ '마지막 }'
+start = body.find("{")
+end = body.rfind("}")
+if start != -1 and end != -1 and end > start:
+    candidates.append(body[start:end+1])
+# 3) 후보들 중 JSON으로 파싱 가능한 것만 채택
+for c in candidates:
+    try:
+        json.loads(c)
+        sys.stdout.write(c)
+        sys.exit(0)
+    except Exception:
+        pass
+sys.exit(1)
+PY
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+
+      - name: Save to queue (production)
         shell: bash
         run: |
           mkdir -p patches/queue
-          fn="patches/queue/issue-${{ github.event.issue.number }}.patch.json"
-          printf '%s' "${{ steps.extract.outputs.json }}" > "$fn"
+          FN="patches/queue/issue-${{ github.event.issue.number }}.patch.json"
+          cp json.txt "$FN"
+
+      - name: Commit & push (only if changes)
+        shell: bash
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$fn"
-          git commit -m "queue: issue #${{ github.event.issue.number }}" || echo "no changes"
+          git add -A
+          git commit -m "queue: issue #${{ github.event.issue.number }}" || echo "No changes to commit"
           git push origin HEAD:production
