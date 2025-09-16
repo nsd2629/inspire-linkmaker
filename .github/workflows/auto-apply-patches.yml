@@ -1,0 +1,102 @@
+name: Apply Patches & Deploy
+
+on:
+  push:
+    branches: [ "production" ]
+    paths:
+      - 'patches/queue/*.patch.json'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production
+        uses: actions/checkout@v4
+        with:
+          ref: production
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Apply all queued patches
+        shell: bash
+        run: |
+          set -e
+          shopt -s nullglob
+          files=(patches/queue/*.patch.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No patch files"; exit 0
+          fi
+
+          changed=0
+          for FILE in "${files[@]}"; do
+            TITLE=$(jq -r '.title // "patch"' "$FILE")
+            COUNT=$(jq '.changes | length' "$FILE")
+            echo "➡️  Applying: $TITLE ($COUNT changes) from $FILE"
+
+            for i in $(seq 0 $((COUNT-1))); do
+              TARGET=$(jq -r ".changes[$i].path" "$FILE")
+              ANCHOR=$(jq -r ".changes[$i].anchor // \"\"" "$FILE")
+              MODE=$(jq -r ".changes[$i].mode // \"append\"" "$FILE")   # replace/insert_before/insert_after/append
+              CODE=$(jq -r ".changes[$i].code" "$FILE")
+
+              mkdir -p "$(dirname "$TARGET")"
+              [ -f "$TARGET" ] || touch "$TARGET"
+
+              if [ "$MODE" = "replace" ]; then
+                printf "%s" "$CODE" > "$TARGET"
+              elif [ "$MODE" = "insert_before" ]; then
+                if grep -Fq "$ANCHOR" "$TARGET"; then
+                  awk -v a="$ANCHOR" -v code="$CODE" 'index($0,a){print code; print; next}1' "$TARGET" > "$TARGET.new" && mv "$TARGET.new" "$TARGET"
+                else
+                  printf "\n%s\n" "$CODE" >> "$TARGET"
+                fi
+              elif [ "$MODE" = "insert_after" ]; then
+                if grep -Fq "$ANCHOR" "$TARGET"; then
+                  awk -v a="$ANCHOR" -v code="$CODE" 'index($0,a){print; print code; next}1' "$TARGET" > "$TARGET.new" && mv "$TARGET.new" "$TARGET"
+                else
+                  printf "\n%s\n" "$CODE" >> "$TARGET"
+                fi
+              else
+                printf "\n%s\n" "$CODE" >> "$TARGET"
+              fi
+            done
+
+            # 큐 파일은 처리 후 제거
+            rm -f "$FILE"
+            changed=1
+          done
+
+          if [ "$changed" = "1" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "auto-apply: queue patches"
+            git push origin HEAD:production
+          else
+            echo "No changes to commit."
+          fi
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (Vite)
+        run: npm run build
+
+      - name: Deploy with Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: |
+            pages deploy dist \
+              --project-name ${{ secrets.CLOUDFLARE_PROJECT_NAME }} \
+              --branch production
