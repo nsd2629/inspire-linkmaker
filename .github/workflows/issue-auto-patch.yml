@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   from-issue:
-    # 템플릿 기본 라벨 'auto-patch'가 있을 때만 동작
-    if: contains(github.event.issue.labels.*.name, 'auto-patch')
+    runs-on: ubuntu-latest
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
