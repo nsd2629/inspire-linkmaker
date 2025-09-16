@@ -1,0 +1,22 @@
+name: Manual Apply & Deploy (launcher)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: "Branch to run Apply & Deploy"
+        default: "production"
+        required: true
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch Apply & Deploy on target branch
+        uses: peter-evans/workflow-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          # production에 있는 실제 파일명 그대로
+          workflow: auto-apply-patches.yml
+          ref: ${{ github.event.inputs.target_branch }}
