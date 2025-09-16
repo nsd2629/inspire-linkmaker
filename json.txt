@@ -1,0 +1,11 @@
+{
+  "title": "헤더 버전 배지 추가",
+  "changes": [
+    {
+      "path": "link/index.html",
+      "anchor": "<div id=\"app\">",
+      "mode": "insert_before",
+      "code": "<style>.ver-badge{position:fixed;right:12px;top:12px;padding:6px 10px;border-radius:12px;background:#111;color:#fff;font-size:12px;opacity:.8}</style>\\n<div class=\\\"ver-badge\\\">LinkMaker v2.2 · Vite · AUTO</div>"
+    }
+  ]
+}
