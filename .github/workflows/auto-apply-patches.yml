@@ -1,19 +1,15 @@
 name: Apply Patches & Deploy
 
 on:
-  # 이슈 큐잉 워크플로가 끝나면 자동으로 이어 실행
   workflow_run:
     workflows: ["Issue -> Queue Patch"]
     types: [completed]
-
-  # 필요시 수동 실행 버튼
   workflow_dispatch:
-
-  # 직접 커밋(로컬 등)에도 반응 유지
   push:
     branches: ["production"]
     paths:
       - "patches/queue/*.patch.json"
+
 
 permissions:
   contents: write
