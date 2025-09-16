@@ -2,7 +2,7 @@ name: Issue -> Queue Patch
 
 on:
   issues:
-    types: [opened, edited, labeled]   # 편집/라벨 변경에도 재실행
+    types: [opened, edited, labeled]   # 편집/라벨 변경 시에도 재실행
 
 permissions:
   contents: write
@@ -25,17 +25,17 @@ jobs:
           python - <<'PY' > json.txt
           import os, sys, json, re
           body = os.environ.get("ISSUE_BODY", "")
-          # 1) ```json ... ``` 코드펜스 우선 추출
+          # 1) ```json ... ``` 코드펜스를 우선 추출
           m = re.search(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", body, re.I)
           candidates = []
           if m:
               candidates.append(m.group(1))
-          # 2) fallback: 본문 첫 '{' ~ 마지막 '}'
+          # 2) fallback: 본문 전체에서 '첫 {' ~ '마지막 }'
           start = body.find("{")
           end = body.rfind("}")
           if start != -1 and end != -1 and end > start:
               candidates.append(body[start:end+1])
-          # 3) 실제 JSON으로 파싱되는 후보만 채택
+          # 3) 실제 JSON으로 파싱 가능한 후보만 채택
           for c in candidates:
               try:
                   json.loads(c)
