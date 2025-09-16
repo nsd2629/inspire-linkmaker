@@ -1,16 +1,23 @@
 name: Apply Patches & Deploy
 
 on:
+  # 1) 이슈 큐잉 워크플로가 끝나면 따라 실행
+  workflow_run:
+    workflows: ["Issue -> Queue Patch"]
+    types: [completed]
+  # 2) 수동/직접 커밋으로도 실행되게 유지
   push:
-    branches: [ "production" ]
+    branches: ["production"]
     paths:
-      - 'patches/queue/*.patch.json'
+      - "patches/queue/*.patch.json"
 
 permissions:
   contents: write
 
 jobs:
   apply-and-deploy:
+    # workflow_run으로 올 때는 성공한 경우에만 진행
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout production
@@ -21,7 +28,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: "22.x"
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -45,7 +52,7 @@ jobs:
             for i in $(seq 0 $((COUNT-1))); do
               TARGET=$(jq -r ".changes[$i].path" "$FILE")
               ANCHOR=$(jq -r ".changes[$i].anchor // \"\"" "$FILE")
-              MODE=$(jq -r ".changes[$i].mode // \"append\"" "$FILE")   # replace/insert_before/insert_after/append
+              MODE=$(jq -r ".changes[$i].mode // \"append\"" "$FILE")
               CODE=$(jq -r ".changes[$i].code" "$FILE")
 
               mkdir -p "$(dirname "$TARGET")"
@@ -70,7 +77,6 @@ jobs:
               fi
             done
 
-            # 큐 파일은 처리 후 제거
             rm -f "$FILE"
             changed=1
           done
@@ -79,10 +85,8 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "auto-apply: queue patches"
+            git commit -m "auto-apply: queue patches" || echo "No changes to commit"
             git push origin HEAD:production
-          else
-            echo "No changes to commit."
           fi
 
       - name: Install deps
