@@ -1,0 +1,23 @@
+name: Auto Patch Request
+description: Paste patch JSON to auto-apply (title, changes[])
+labels: ["auto-patch"]
+body:
+  - type: textarea
+    id: patch
+    attributes:
+      label: Paste your patch JSON here
+      description: Include fields: title, changes[]
+      placeholder: |
+        {
+          "title": "헤더 배지",
+          "changes": [
+            {
+              "path": "link/index.html",
+              "anchor": "<div id=\"app\">",
+              "mode": "insert_before",
+              "code": "<style>...</style>\\n<div class=\\\"ver-badge\\\">...</div>"
+            }
+          ]
+        }
+    validations:
+      required: true
