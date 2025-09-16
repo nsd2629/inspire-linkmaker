@@ -2,7 +2,7 @@ name: Issue -> Auto Patch
 
 on:
   issues:
-    types: [opened, edited, labeled]
+    types: [opened]
 
 permissions:
   contents: write
@@ -12,8 +12,6 @@ permissions:
 jobs:
   from-issue:
     runs-on: ubuntu-latest
-
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,7 +19,6 @@ jobs:
 
       - name: Switch to production branch
         run: |
-          # production 브랜치로 확실히 전환
           if git show-ref --verify --quiet refs/heads/production; then
             git checkout production
           else
@@ -31,9 +28,12 @@ jobs:
       - name: Extract patch JSON from issue body
         id: extract
         run: |
-          body=$(printf "%s" "${{ github.event.issue.body }}")
-          # 본문에서 첫 '{'부터 마지막 '}'까지를 JSON으로 추출 (간단/견고 버전)
-          json=$(echo "$body" | awk 'BEGIN{f=0} /\{/{f=1} {if(f)print} /\}/{if(f){print; exit}}')
+          body="${{ github.event.issue.body }}"
+          echo "$body" > issue-body.txt
+          json=$(cat issue-body.txt | awk 'BEGIN{f=0} /\{/{f=1} {if(f)print} /\}/{if(f){print; exit}}')
+          if [ -z "$json" ]; then
+            echo "No JSON found in issue body"; exit 1
+          fi
           echo "json<<EOF" >> $GITHUB_OUTPUT
           echo "$json" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
