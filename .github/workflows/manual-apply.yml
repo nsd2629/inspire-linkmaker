@@ -12,11 +12,17 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch Apply & Deploy on target branch
-        uses: peter-evans/workflow-dispatch@v2
+      - name: Dispatch auto-apply on target branch (no third-party)
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          # production에 있는 실제 파일명 그대로
-          workflow: auto-apply-patches.yml
-          ref: ${{ github.event.inputs.target_branch }}
+          script: |
+            const ref = core.getInput('target_branch') || 'production';
+            const workflow = 'auto-apply-patches.yml'; // 파일명 그대로
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: workflow,
+              ref, // ← production에 있는 워크플로 파일을 그 브랜치에서 실행
+            });
+            core.info(`Dispatched ${workflow} on ${ref}`);
+
