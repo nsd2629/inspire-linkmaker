@@ -1,12 +1,3 @@
 ﻿[
-  {
-    ""id"": ""BG-0001"",
-    ""group"": ""healing"",
-    ""file"": ""/assets/bg/healing/0001.jpg"",
-    ""thumb"": ""/assets/bg/healing/thumb/0001.jpg"",
-    ""credit"": ""Inspire Wood"",
-    ""license"": ""owned"",
-    ""tags"": [""soft"", ""warm""],
-    ""status"": ""approved""
-  }
+  {""id"":""BG-0001"",""group"":""healing"",""file"":""/assets/bg/healing/0001.jpg"",""thumb"":""/assets/bg/healing/thumb/0001.jpg"",""credit"":""Inspire Wood"",""license"":""owned"",""tags"":[""soft"",""warm""],""status"":""approved""}
 ]
