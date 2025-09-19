@@ -1,0 +1,38 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Inspire Link Maker</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Noto Sans,Helvetica,Arial,sans-serif;margin:0;background:#0b0c0f;color:#e6e8eb}
+      .wrap{max-width:1200px;margin:0 auto;padding:24px}
+      .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0 24px}
+      .dash-card{background:#13151a;border:1px solid #1e222b;border-radius:16px;padding:18px}
+      .panel{background:#13151a;border:1px solid #1e222b;border-radius:16px;padding:18px}
+      .flow{line-height:1.9}
+      .btn{display:inline-block;margin-top:12px;padding:10px 14px;border-radius:10px;border:1px solid #2a303b}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Inspire Link Maker</h1>
+      <nav id="split-nav" class="dash-grid">
+        <a class="dash-card" href="/hanlove-maker">
+          <h3>한글사랑 링크메이커</h3>
+          <p>언어별(EN 디폴트) 메시지 → 프리뷰 → 저장/배포</p>
+        </a>
+        <a class="dash-card" href="/healing-maker">
+          <h3>힐링메세지 링크메이커</h3>
+          <p>커스텀(단문/장문·이미지) → 프리뷰 → 저장/배포</p>
+        </a>
+        <a class="dash-card" href="/storage">
+          <h3>저장소</h3>
+          <p>한글사랑 / 힐링메세지 / 배경이미지</p>
+        </a>
+      </nav>
+      <main id="app"></main>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

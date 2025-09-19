@@ -1,0 +1,12 @@
+﻿[
+  {
+    ""id"": ""HM-1001"",
+    ""group"": ""healing"",
+    ""type"": ""short"",
+    ""text"": ""오늘의 햇살처럼 마음도 밝아지길"",
+    ""tags"": [""응원"", ""위로""],
+    ""status"": ""approved"",
+    ""weight"": 1,
+    ""meta"": { ""createdBy"": ""admin"" }
+  }
+]
