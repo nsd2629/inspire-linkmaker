@@ -2,7 +2,7 @@
 // 중복검사 + 슬러그 유틸 + 주문 JSONL 다운로드
 
 export async function loadSlugs() {
-  const res = await fetch('/link/data/slugs.json', { cache: 'no-store' });
+  const res = await fetch('./data/slugs.json', { cache: 'no-store' });
   try { return await res.json(); } catch { return {}; }
 }
 

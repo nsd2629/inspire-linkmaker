@@ -88,7 +88,7 @@ function route() {
       break;
 
     default:
-      // 대시보드 기본 카드 그대로 유지
+      // 대시보드 기본 카드 그대로 유지 (index.html에 있음)
       break;
   }
 }
