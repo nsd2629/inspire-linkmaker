@@ -165,24 +165,55 @@ function route() {
 
     /** 저장소 설명 */
     case '/storage':
-      render(`
-        <section class="panel">
-          <h2>저장소</h2>
-          <ul class="flow">
-            <li>한글사랑 저장소 (EN 디폴트 기준, 타 언어=번역 필드만)</li>
-            <li>힐링메세지 저장소 (그룹: healing/bible30/today30…)</li>
-            <li>배경 이미지 저장소 (그룹별 썸네일 그리드)</li>
-          </ul>
-          <div class="actions">
-            <a class="btn" href="/">← 대시보드</a>
-          </div>
-        </section>
-      `);
-      break;
+  render(`
+    <section class="panel">
+      <h2>저장소</h2>
 
-    default:
-      // 대시보드 기본 카드(index.html) 그대로 사용
-      break;
+      <div style="display:flex;gap:12px;align-items:center;margin:12px 0 16px;">
+        <label>배경 그룹</label>
+        <select id="st-group">
+          <option value="healing">healing</option>
+          <option value="bible30">bible30</option>
+          <option value="today30">today30</option>
+        </select>
+        <span id="st-count" style="opacity:.8"></span>
+        <a class="btn" href="/">← 대시보드</a>
+      </div>
+
+      <div id="st-grid"
+           style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+                  gap:12px;align-items:start;"></div>
+    </section>
+  `);
+
+  async function loadList(group){
+    const res = await fetch(`/link/data/backgrounds/${group}/index.json`, { cache: 'no-store' });
+    try { return await res.json(); } catch { return []; }
+  }
+  function cardHtml(it){
+    const src = it.thumb || it.file;
+    const title = it.title || '';
+    return `
+      <figure style="border:1px solid #2a303b;border-radius:12px;overflow:hidden;background:#0f1115">
+        <img src="${src}" alt="${title}" style="display:block;width:100%;height:140px;object-fit:cover"/>
+        <figcaption style="padding:8px 10px;font-size:.9rem;opacity:.9">${title || it.file}</figcaption>
+      </figure>
+    `;
+  }
+  async function renderGrid(group){
+    const grid = document.querySelector('#st-grid');
+    const cnt  = document.querySelector('#st-count');
+    grid.innerHTML = `<div style="opacity:.7">로딩 중…</div>`;
+    const list = await loadList(group);
+    cnt.textContent = list.length ? `총 ${list.length}장` : '이미지 없음';
+    grid.innerHTML = list.map(cardHtml).join('') || `<div style="opacity:.7">목록이 비었습니다.</div>`;
+  }
+
+  const sel = document.querySelector('#st-group');
+  sel.addEventListener('change', () => renderGrid(sel.value));
+  renderGrid(sel.value);
+  break;
+
   }
 }
 
