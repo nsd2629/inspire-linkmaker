@@ -1,37 +1,39 @@
-﻿
-<!doctype html><html lang="ko"><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Link Viewer</title>
-<link rel="stylesheet" href="./assets/style.css">
-<base href="./"/>
-</head><body>
-<main class="container">
-  <section class="card">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <h2 id="title">移대뱶 酉?/h2>
-      <div>
-        <button id="btnOpen" class="small">Open</button>
-        <button id="btnTTS" class="big">Play TTS</button>
-      </div>
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Inspire Link Maker</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Noto Sans,Helvetica,Arial,sans-serif;margin:0;background:#0b0c0f;color:#e6e8eb}
+      .wrap{max-width:1200px;margin:0 auto;padding:24px}
+      .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0 24px}
+      .dash-card{background:#13151a;border:1px solid #1e222b;border-radius:16px;padding:18px;text-decoration:none;color:inherit}
+      .dash-card h3{margin:0 0 6px 0}
+      .panel{background:#13151a;border:1px solid #1e222b;border-radius:16px;padding:18px}
+      .flow{line-height:1.9}
+      .btn{display:inline-block;margin-top:12px;padding:10px 14px;border-radius:10px;border:1px solid #2a303b;text-decoration:none;color:inherit}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Inspire Link Maker</h1>
+      <nav id="split-nav" class="dash-grid">
+        <a class="dash-card" href="/hanlove-maker">
+          <h3>한글사랑 링크메이커</h3>
+          <p>언어별(EN 디폴트) → 프리뷰 → 저장/배포</p>
+        </a>
+        <a class="dash-card" href="/healing-maker">
+          <h3>힐링메세지 링크메이커</h3>
+          <p>커스텀(단문/장문·이미지) → 프리뷰 → 저장/배포</p>
+        </a>
+        <a class="dash-card" href="/storage">
+          <h3>저장소</h3>
+          <p>한글사랑 / 힐링메세지 / 배경이미지</p>
+        </a>
+      </nav>
+      <main id="app"></main>
     </div>
-    <div id="message" style="font-size:24px;line-height:1.4;margin:8px 0 12px 0;"></div>
-    <div class="meta">
-      <div><strong>移대뱶</strong><div id="metaCard">-</div></div>
-      <div><strong>ID</strong><div id="metaId">-</div></div>
-      <div><strong>二쇰Ц??/strong><div id="metaOwner">-</div></div>
-      <div><strong>洹몃９</strong><div id="metaGroup">-</div></div>
-      <div><strong>mode</strong><div id="metaMode">-</div></div>
-      <div><strong>由ъ뒪??/strong><div id="metaList">-</div></div>
-    </div>
-    <div class="footer" id="creditWrap" style="display:none"></div>
-  </section>
-</main>
-
-<script>window.APP_VERSION="dev";</script>
-<script type="module" src="./app.js"></script>
-</body></html>
-
-
-
-
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
