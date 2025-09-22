@@ -1,3 +1,5 @@
 ﻿[
-  {""id"":""BG-0001"",""group"":""healing"",""file"":""/assets/bg/healing/0001.jpg"",""thumb"":""/assets/bg/healing/thumb/0001.jpg"",""credit"":""Inspire Wood"",""license"":""owned"",""tags"":[""soft"",""warm""],""status"":""approved""}
+  { "file": "/bg/healing/0001.jpg", "thumb": "/bg/healing/0001.jpg", "title": "healing-1" },
+  { "file": "/bg/healing/0002.jpg", "thumb": "/bg/healing/0002.jpg", "title": "healing-2" },
+  { "file": "/bg/healing/0003.jpg", "thumb": "/bg/healing/0003.jpg", "title": "healing-3" }
 ]
