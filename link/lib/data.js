@@ -1,25 +1,38 @@
 // link/lib/data.js
-// 중복검사 + 슬러그 유틸 + 주문 JSONL 다운로드
+// 중복검사 + 슬러그 유틸 + 주문 JSONL 다운로드 (슬러그 캐시 포함)
 
-export async function loadSlugs() {
-  const res = await fetch('./data/slugs.json', { cache: 'no-store' });
+let _slugCache = null;
+let _slugLoadedAt = 0;
 
-  try { return await res.json(); } catch { return {}; }
+export async function loadSlugs(force = false) {
+  const now = Date.now();
+  // 30초 캐시
+  if (!force && _slugCache && now - _slugLoadedAt < 30_000) return _slugCache;
+  try {
+    const res = await fetch('/data/slugs.json', { cache: 'no-store' });
+    _slugCache = await res.json();
+    _slugLoadedAt = now;
+  } catch {
+    _slugCache = {};
+    _slugLoadedAt = now;
+  }
+  return _slugCache;
 }
-
 export function isSlugTaken(slugs, slug) {
   if (!slug) return true;
   return Object.prototype.hasOwnProperty.call(slugs, slug);
 }
-
 export function makeSlug(s) {
   return String(s || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036F]/g, '')
     .trim().toLowerCase()
     .replace(/[^a-z0-9\-_\s]/g, '')
     .replace(/\s+/g, '-')
-    .slice(0, 40);
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48);
 }
-
 export function exportOrderJSONL(record) {
   const line = JSON.stringify(record);
   const y = new Date();

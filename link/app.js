@@ -1,4 +1,4 @@
-﻿/* Inspire Link Maker - Split Dashboard + Save Demo + Storage Actions */
+﻿/* Inspire Link Maker — Dashboard + Save Demo + Healing Form + Storage Actions */
 
 import {
   loadSlugs,
@@ -10,12 +10,20 @@ import { chooseDaily } from './lib/random.js';
 
 const qs = (s, el = document) => el.querySelector(s);
 
+// 작은 유틸
+const debounce = (fn, ms=200) => {
+  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+};
+
 /* =========================
    공통: 저장(데모) → JSONL
    ========================= */
-async function handleSave({ type }) {
+async function handleSave({ type, payload = {} }) {
   const slugs = await loadSlugs();
-  const base = type === 'hanlove' ? 'its-okay' : 'healing-custom';
+  // 기본 베이스
+  let base = type === 'hanlove' ? 'its-okay' : 'healing-custom';
+  // 폼에서 들어온 슬러그가 있으면 우선
+  if (payload.slug) base = payload.slug;
   const slug = makeSlug(base);
 
   if (isSlugTaken(slugs, slug)) {
@@ -27,11 +35,19 @@ async function handleSave({ type }) {
     dt: new Date().toISOString(),
     slug,
     url: `/link/?card=${type}&v=1`,
-    customer: 'demo',
-    meta: { channel: 'dashboard', type },
+    customer: payload.recipient || 'demo',
+    meta: {
+      channel: 'dashboard',
+      type,
+      recipient: payload.recipient || null,
+      messageType: payload.msgType || null,      // 'custom' | 'preset'
+      message: payload.message || null,
+      bg: payload.bg || null,                    // 선택된 배경 경로(있으면)
+      upload: !!payload.upload,                  // 업로드 사용여부
+    },
   };
 
-  exportOrderJSONL(record); // 임시 기록: JSONL 1줄 다운로드
+  exportOrderJSONL(record);
   alert(`주문 JSONL 1줄 저장됨: ${slug}`);
 }
 
@@ -65,27 +81,60 @@ function route() {
       break;
     }
 
-    /* ---------- 힐링메세지 ---------- */
+    /* ---------- 힐링메세지: 입력폼/프리뷰/슬러그 즉시검사 ---------- */
     case '/healing-maker': {
       render(`
         <section class="panel">
           <h2>힐링메세지 링크메이커</h2>
           <ol class="flow">
-            <li>수령인 이름 입력</li>
-            <li>메시지 선택 or 커스텀 입력(단문/장문)</li>
-            <li>배경 선택(그룹) / 이미지 업로드(고정)</li>
-            <li>프리뷰(저장소=매일 랜덤 / 업로드=고정)</li>
-            <li>저장 → 단축URL 생성 → 배포(노션)</li>
+            <li>수령인 이름</li>
+            <li>메시지(선택 또는 커스텀)</li>
+            <li>배경(저장소=매일 랜덤 or 업로드=고정)</li>
+            <li>슬러그 입력(즉시 중복검사)</li>
+            <li>저장 → 단축URL 생성 → 배포</li>
           </ol>
 
-          <div style="display:flex; gap:12px; flex-wrap:wrap; margin:12px 0;">
-            <select id="bg-group">
-              <option value="healing">healing</option>
-            </select>
-            <button id="btn-daily" class="btn">저장소(매일 랜덤) 프리뷰</button>
-            <label class="btn" style="cursor:pointer;">
-              업로드(고정) <input id="file-up" type="file" accept="image/*" hidden />
-            </label>
+          <div style="display:grid;gap:12px;margin:16px 0;">
+            <div>
+              <label>수령인 이름</label><br/>
+              <input id="recip" placeholder="예: 김OO" style="width:320px;padding:8px;border-radius:8px;border:1px solid #2a303b;background:#0f1115;color:#e6e8eb"/>
+            </div>
+
+            <div>
+              <details>
+                <summary>메시지 선택(간단 프리셋) 또는 커스텀</summary>
+                <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+                  <select id="msg-preset">
+                    <option value="">(선택 안 함)</option>
+                    <option value="오늘도 평안하길">오늘도 평안하길</option>
+                    <option value="당신의 하루가 환하게 빛나길">당신의 하루가 환하게 빛나길</option>
+                    <option value="힘들 땐 잠시 쉬어가요">힘들 땐 잠시 쉬어가요</option>
+                  </select>
+                  <textarea id="msg-custom" placeholder="직접 메시지를 적어주세요" rows="3" style="min-width:380px;padding:8px;border-radius:8px;border:1px solid #2a303b;background:#0f1115;color:#e6e8eb"></textarea>
+                </div>
+              </details>
+            </div>
+
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+              <select id="bg-group">
+                <option value="healing">healing</option>
+              </select>
+              <button id="btn-daily" class="btn">저장소(매일 랜덤) 프리뷰</button>
+              <label class="btn" style="cursor:pointer;">
+                업로드(고정) <input id="file-up" type="file" accept="image/*" hidden />
+              </label>
+              <a class="btn" href="/storage">저장소 열기</a>
+            </div>
+
+            <div>
+              <label>슬러그</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                <input id="slug" placeholder="예: healing-custom" style="width:320px;padding:8px;border-radius:8px;border:1px solid #2a303b;background:#0f1115;color:#e6e8eb"/>
+                <span id="slug-pill" style="padding:6px 10px;border-radius:999px;border:1px solid #2a303b;opacity:.9">대기중</span>
+                <button id="btn-make-slug" class="btn">자동 생성</button>
+              </div>
+              <small style="opacity:.75">영문/숫자/하이픈만, 최대 48자</small>
+            </div>
           </div>
 
           <div id="preview" style="border:1px solid #2a303b;border-radius:12px;min-height:220px;display:flex;align-items:center;justify-content:center;overflow:hidden">
@@ -98,6 +147,15 @@ function route() {
           </div>
         </section>
       `);
+
+      // 스타일(슬러그 pill 색)
+      if (!document.querySelector('#pill-style')) {
+        const css = document.createElement('style'); css.id = 'pill-style';
+        css.textContent = `
+          .pill-ok  { background:#102a16; color:#b6f0b8; border-color:#224d29; }
+          .pill-bad { background:#2a1111; color:#ffb3b3; border-color:#5a2020; }
+        `; document.head.appendChild(css);
+      }
 
       // ---- 프리뷰 상태 & 로직 ----
       let fixedUpload = null;   // 업로드(고정) dataURL
@@ -155,12 +213,62 @@ function route() {
         localStorage.removeItem('lm:healing:previewFixed');
       }
 
-      // 저장(JSONL)
-      qs('#save-healing')?.addEventListener('click', () => handleSave({ type: 'healing' }));
+      // ---- 슬러그 즉시검사 ----
+      const $slug = qs('#slug');
+      const $pill = qs('#slug-pill');
+      const pillSet = (ok, text) => {
+        $pill.textContent = text || (ok ? '사용 가능' : '사용 불가');
+        $pill.classList.remove('pill-ok','pill-bad');
+        $pill.classList.add(ok ? 'pill-ok' : 'pill-bad');
+      };
+      const checkSlug = debounce(async ()=>{
+        const raw = $slug.value;
+        const normalized = makeSlug(raw);
+        if (normalized !== raw) $slug.value = normalized;
+        if (!normalized) { $pill.classList.remove('pill-ok','pill-bad'); $pill.textContent='대기중'; return; }
+        const slugs = await loadSlugs();
+        pillSet(!isSlugTaken(slugs, normalized));
+      }, 250);
+      $slug.addEventListener('input', checkSlug);
+
+      // 자동 생성: 수령인+메시지 기반
+      qs('#btn-make-slug')?.addEventListener('click', ()=>{
+        const recip = (qs('#recip')?.value || '').trim();
+        const msg   = (qs('#msg-custom')?.value || qs('#msg-preset')?.value || '').trim();
+        const base  = recip ? `${recip}-${msg || 'healing'}` : (msg || 'healing-custom');
+        $slug.value = makeSlug(base);
+        $slug.dispatchEvent(new Event('input'));
+      });
+
+      // 저장(JSONL) — 폼 메타 포함
+      qs('#save-healing')?.addEventListener('click', () => {
+        const recip = (qs('#recip')?.value || '').trim();
+        const msgPreset = (qs('#msg-preset')?.value || '').trim();
+        const msgCustom = (qs('#msg-custom')?.value || '').trim();
+        const msgType = msgCustom ? 'custom' : (msgPreset ? 'preset' : 'none');
+        const message = msgCustom || msgPreset || '';
+        const slugIn  = (qs('#slug')?.value || '').trim();
+
+        if (!recip) { alert('수령인 이름을 입력해주세요.'); return; }
+        if (!message) { alert('메시지를 선택하거나 입력해주세요.'); return; }
+        if (!slugIn) { alert('슬러그를 입력/생성해주세요.'); return; }
+
+        handleSave({
+          type: 'healing',
+          payload: {
+            recipient: recip,
+            msgType,
+            message,
+            slug: slugIn,
+            bg: dailyPick || null,
+            upload: !!fixedUpload,
+          }
+        });
+      });
       break;
     }
 
-    /* ---------- 저장소 ---------- */
+    /* ---------- 저장소(썸네일 + 액션) ---------- */
     case '/storage': {
       render(`
         <section class="panel">
