@@ -187,7 +187,7 @@ function route() {
   `);
 
   async function loadList(group){
-    const res = await fetch(`/link/data/backgrounds/${group}/index.json`, { cache: 'no-store' });
+    const res = await fetch(`/data/backgrounds/${group}/index.json`, { cache: 'no-store' });
     try { return await res.json(); } catch { return []; }
   }
   function cardHtml(it){

@@ -3,6 +3,7 @@
 
 export async function loadSlugs() {
   const res = await fetch('./data/slugs.json', { cache: 'no-store' });
+
   try { return await res.json(); } catch { return {}; }
 }
 
