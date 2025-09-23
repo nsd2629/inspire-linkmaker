@@ -377,3 +377,4 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('popstate', route);
 document.addEventListener('DOMContentLoaded', route);
+
