@@ -1,0 +1,7 @@
+{
+  "envs": {
+    "staging": { "base": "https://inspire-linkmaker.pages.dev" },
+    "prod":    { "base": "https://brand.kr" }
+  },
+  "default_env": "staging"
+}

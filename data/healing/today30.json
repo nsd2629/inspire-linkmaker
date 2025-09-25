@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "list": "toda30",
+    "lang": "ko",
+    "credit": "출처 표기"
+  },
+  "items": [
+    {
+      "id": "HLG-596",
+      "text": "당신의 오늘이 따뜻하길",
+      "tags": [
+        "위로"
+      ],
+      "weight": 1,
+      "status": "APPROVED"
+    },
+    {
+      "id": "HLG-789",
+      "text": "괜찮아, 여기까지 잘 왔어",
+      "tags": [
+        "격려"
+      ],
+      "weight": 1,
+      "status": "DRAFT"
+    },
+    {
+      "id": "HLG-803",
+      "text": "천천히",
+      "tags": [
+        "위로"
+      ],
+      "weight": 1,
+      "status": "DRAFT"
+    }
+  ]
+}

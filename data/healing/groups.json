@@ -1,0 +1,28 @@
+{
+  "groups": [
+    {
+      "key": "default",
+      "name": "기본(힐링메세지)",
+      "desc": "랜덤/셔플 메시지 표준 세트",
+      "count": 12
+    },
+    {
+      "key": "bible30",
+      "name": "성경 30구절",
+      "desc": "말씀 기반 위로/격려",
+      "count": 30
+    },
+    {
+      "key": "custom-grace",
+      "name": "커스텀 – Grace",
+      "desc": "주문자 전용 세트",
+      "count": 12
+    },
+    {
+      "key": "custom-kim_mj",
+      "name": "커스텀 – Kim.M.J",
+      "desc": "주문자 전용 세트",
+      "count": 12
+    }
+  ]
+}

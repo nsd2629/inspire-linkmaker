@@ -1,0 +1,53 @@
+
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>한글사랑 링크메이커</title>
+<link rel="stylesheet" href="/assets/style.css?v=dev">
+<base href="/"/>
+</head><body>
+<header class="lm-header">
+  <h1>한글사랑 링크메이커</h1>
+  <nav>
+    <a class="badge" href="/healing-maker/">힐링메세지 메이커</a>
+    <button id="btnLoadStore" class="small">저장소 불러오기</button>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="card">
+    <h2>설정</h2>
+    <div class="stack">
+      <label>카드 ID <input id="cardId" placeholder="예: HL-001"/></label>
+      <label>리스트 <input id="listName" placeholder="예: default"/></label>
+      <label>모드
+        <select id="mode">
+          <option value="fixed">선택고정</option>
+          <option value="daily">매일랜덤</option>
+        </select>
+      </label>
+      <label>폰트 출처(크레딧)
+        <textarea id="fontCredit" placeholder="예: Pretendard — https://github.com/orioncactus..."></textarea>
+      </label>
+      <div class="row">
+        <button id="btnAddMsg">메세지 추가</button>
+        <button id="btnSave" class="primary">저장</button>
+        <button id="btnPreview">미리보기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>메세지 목록</h2>
+    <ul id="msgList"></ul>
+  </section>
+
+  <section class="card">
+    <h2>카드 프리뷰</h2>
+    <iframe id="preview" class="preview" title="preview"></iframe>
+  </section>
+</main>
+
+<script>window.APP_VERSION="dev";</script>
+<script type="module" src="/hanlove-maker/app.js?v=dev"></script>
+</body></html>

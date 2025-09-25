@@ -1,0 +1,52 @@
+<!doctype html><meta charset="utf-8">
+<title>Redirecting…</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:#0b1020;color:#cbd5e1;margin:0;padding:40px}
+.box{max-width:760px;margin:0 auto;background:#0f1530;border:1px solid #334; padding:20px;border-radius:12px}
+h1{font-size:18px;margin:0 0 10px} code{background:#11193a;border:1px solid #334;padding:2px 6px;border-radius:6px}</style>
+<div class="box">
+  <h1>Redirecting…</h1>
+  <div id="msg">Please wait.</div>
+</div>
+<script>
+(async function(){
+  const path = location.pathname.replace(/\/+$/, '');
+  const segs = path.split('/');
+  const slug = decodeURIComponent(segs[segs.length - 1] || '').trim();
+  const msg = (html)=>{ document.getElementById('msg').innerHTML = html; };
+
+  if (!slug) { msg('Missing slug.'); return; }
+
+  try {
+    const res = await fetch('/data/slugs.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('slugs.json not found');
+    const map = await res.json();
+    const item = map[slug];
+    if (!item || !item.path) {
+      msg('Short link not found: <code>' + slug + '</code>');
+      console.log('Known slugs:', Object.keys(map));
+      return;
+    }
+
+    // Build target URL from stored relative path
+    const target = new URL(item.path, location.origin);
+
+    // Pass-through query from /s/<slug>?q=... to final URL (merge; do not override existing keys)
+    const qs = new URLSearchParams(location.search);
+    for (const [k, v] of qs) {
+      if (!target.searchParams.has(k)) target.searchParams.set(k, v);
+    }
+
+    // Keep referrer UTM if present in current URL
+    ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k=>{
+      const val = qs.get(k);
+      if (val && !target.searchParams.has(k)) target.searchParams.set(k, val);
+    });
+
+    // Do the redirect
+    location.replace(target.toString());
+  } catch (e) {
+    console.error(e);
+    msg('Unexpected error. Check <code>/data/slugs.json</code> and try again.');
+  }
+})();
+</script>

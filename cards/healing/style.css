@@ -1,0 +1,8 @@
+:root{ --bg1:#ffedd5; --bg2:#fecdd3; --fg:#111 }
+body{ background: linear-gradient(135deg,var(--bg1),var(--bg2)); }
+.healing-card{ max-width:720px; margin:24px; padding:28px; background:#fff; color:var(--fg); border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,.15) }
+.healing-card .msg{ font-size:clamp(20px,4vw,36px); line-height:1.4; margin:0 0 16px }
+.actions{ display:flex; gap:12px }
+.btn-lg{ font-size:18px; padding:14px 18px; border-radius:14px; border:0; background:#111; color:#fff; cursor:pointer }
+.btn-sm{ font-size:14px; padding:10px 14px; border-radius:12px; border:1px solid #222; color:#111; text-decoration:none }
+.credit{ margin-top:14px; opacity:.7; font-size:12px }
